@@ -13,15 +13,8 @@ class ModelView(MethodView, ModelMixin):
     def __init__(self):
         if self.view_model:
             assert issubclass(self.view_model, CollectionModel)
-            self._model = current_app.mongo.get_collection(self.view_model.collection_name)
+            self._model = current_app.mongo.get_collection(self.view_model)
         else:
             raise MissingViewModelException()
         super().__init__()
-    
-    @property
-    def blueprint(self) -> Blueprint:
-        blueprint = request.blueprint
-        if blueprint is None:
-            raise NotABlueprintView()
-        return current_app.blueprints[blueprint]
 

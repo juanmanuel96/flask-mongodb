@@ -104,7 +104,10 @@ class MongoDB(object):
         :param collection_name: Name of the collection to be retrieved
         :type collection_name: str
         """
-        collection_name = collection.collection_name if issubclass(collection, CollectionModel) else collection
+        try:
+            collection_name = collection.collection_name
+        except AttributeError:
+            collection_name = collection.collection_name
         if not isinstance(collection_name, str):
             raise Exception('Must pass a collection or collection name')
         collection_to_return = self.collections.get(collection_name)
