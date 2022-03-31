@@ -1,3 +1,5 @@
+import typing as t
+
 from flask_mongodb.core.exceptions import CollectionException, DatabaseException, InvalidClass, URIMissing
 from flask_mongodb.core.wrappers import MongoConnect, MongoDatabase
 from flask_mongodb.models import CollectionModel
@@ -71,7 +73,7 @@ class MongoDB(object):
 
         self.__db = MongoDatabase(self.client, db_name)
 
-    def register_collection(self, collection_cls: CollectionModel):
+    def register_collection(self, collection_cls: t.Type[CollectionModel]):
         """
         Collection is a user-defined collection that will be added to the MongoFlask instance
         """
@@ -80,32 +82,31 @@ class MongoDB(object):
         else:
             raise InvalidClass('Invalid class type')
 
-    def __register_collection(self, collection_cls):
+    def __register_collection(self, collection_cls: t.Type[CollectionModel]):
         _name = collection_cls.collection_name
-        _collection, success = self._insert_collection(_name, collection_cls)
+        success = self._insert_collection(_name, collection_cls)
         if not success:
             raise Exception('Not success')
         return success
 
-    def _insert_collection(self, name, collection_cls: CollectionModel):
+    def _insert_collection(self, name, collection_cls: t.Type[CollectionModel]) -> bool:
         """
         Inserts a new collection into the collections attribute.
         """
         _collection = collection_cls(self.db)
         self.__collections.update({name: _collection})
-        return _collection, self.collections.get(name) is not None
+        return self.collections.get(name) is not None
     
-    def get_collection(self, collection_name) -> CollectionModel:
+    def get_collection(self, collection: t.Union[str, t.Type[CollectionModel]]) -> t.Type[CollectionModel]:
         """
         Retrieves a Collection instance from the collections attribute.
 
         :param collection_name: Name of the collection to be retrieved
         :type collection_name: str
         """
-        if not collection_name:
-            # Make sure user does not send a Boolean False or a falsy value
-            raise CollectionException('A collection name is required')
-
+        collection_name = collection.collection_name if issubclass(collection, CollectionModel) else collection
+        if not isinstance(collection_name, str):
+            raise Exception('Must pass a collection or collection name')
         collection_to_return = self.collections.get(collection_name)
         if not collection_to_return:
             raise CollectionException('Collection invalid')
