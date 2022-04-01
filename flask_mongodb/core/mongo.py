@@ -18,7 +18,7 @@ class MongoDB(object):
         """
         self.__client = None  # MongoDB client
         self.__db = None  # Application database
-        self.__collections = {}  # Database collections
+        self.__collections: t.Dict[str, t.Type[CollectionModel]] = {}  # Database collections
 
         if app is not None:
             self.init_app(app)
@@ -97,7 +97,7 @@ class MongoDB(object):
         self.__collections.update({name: _collection})
         return self.collections.get(name) is not None
     
-    def get_collection(self, collection: t.Union[str, t.Type[CollectionModel]]) -> t.Type[CollectionModel]:
+    def get_collection(self, collection: t.Union[str, t.Type[CollectionModel]]):
         """
         Retrieves a Collection instance from the collections attribute.
 
