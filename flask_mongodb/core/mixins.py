@@ -1,11 +1,10 @@
 import typing as t
 from flask_mongodb.core.wrappers import MongoCollection
-from flask_mongodb.models.collection import CollectionModel
 
 
 class ModelMixin:
     @property
-    def model(self) -> t.Type[CollectionModel]:
+    def model(self):
         return self._model
     
     @property
