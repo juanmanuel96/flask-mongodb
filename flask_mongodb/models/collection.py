@@ -24,11 +24,9 @@ class CollectionModel(BaseCollection):
     validation_level: str = 'strict'
     _id = ObjectIDField()
 
-    def __init__(self, database, data: dict[str, t.Any] = None):
+    def __init__(self, database):
         super(CollectionModel, self).__init__()
-        self.__data__ = data
-        if self.__data__:
-            self.__assign_data_to_fields__()
+        self.__data__ = {}
         
         if not self.collection_name:
             raise CollectionException('Need a collection name')
@@ -55,7 +53,10 @@ class CollectionModel(BaseCollection):
         return self.collection_name
     
     def __iter__(self):
-        return self._fields.values()
+        return iter(self._fields.values())
+    
+    def __repr__(self) -> str:
+        return f"{self.__class__}.{self.collection_name}"
 
     @property
     def collection(self) -> MongoCollection:
@@ -77,7 +78,7 @@ class CollectionModel(BaseCollection):
                 _data[name] = field.data
         return _data
     
-    def set_model_data(self, data) -> None:
+    def set_model_data(self, data: dict) -> None:
         self.__data__ = data
         self.__assign_data_to_fields__()
 
@@ -141,9 +142,10 @@ class CollectionModel(BaseCollection):
         return validators if validators['$jsonSchema']['properties'] else {}
 
     def __assign_data_to_fields__(self):
-        for field_name, value in self.__data__.items():
-            field = self.fields.get(field_name)
-            field.data = value
+        for name, field in self.fields.items():
+            value = self.__data__.get(name)
+            if value is not None:
+                field.data = value
     
     def serialize_fields(self, document: t.Dict, 
                          fields: t.Union[str, t.List]) -> t.Dict:

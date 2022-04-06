@@ -8,7 +8,7 @@ from flask_mongodb.core.mixins import ModelMixin
 
 
 class ModelView(MethodView, ModelMixin):
-    view_model = None
+    view_model: t.Type[CollectionModel] = None
 
     def __init__(self):
         if self.view_model:

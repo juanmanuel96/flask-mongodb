@@ -145,7 +145,7 @@ class DateField(Field):
     bson_type = 'date'
     
     def __init__(self, format='%Y-%m-%d', required: bool = True, data: t.Union[str, datetime] = None,
-                 allow_null=False, default=datetime(1901, 1, 1, 0, 0, 0, 0)) -> None:
+                 allow_null=False, default: t.Union[datetime, None]=datetime(1901, 1, 1, 0, 0, 0, 0)) -> None:
         self.format = format
         super().__init__(required=required, data=data, allow_null=allow_null, default=default)
     
