@@ -1,6 +1,4 @@
 import typing as t
-from wtforms import (BooleanField, DateField, DateTimeField, FileField,
-                     FloatField, IntegerField, SelectField, StringField)
 from wtforms.fields import Field
 from wtforms.utils import unset_value
 from flask_mongodb.serializers.exceptions import InvalidIncomingData
@@ -80,7 +78,7 @@ class JSONField(Field):
         return getattr(self.form, name)
 
     @property
-    def data(self):
+    def data(self) -> dict:
         return self.form.data
 
     @property
