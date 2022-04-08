@@ -5,7 +5,7 @@ from flask_mongodb.core.wrappers import MongoConnect, MongoDatabase
 from flask_mongodb.models import CollectionModel
 
 
-class MongoDB(object):
+class MongoDB:
     def __init__(self, app=None):
         """
         Connect your MongoDB client to a Flask application. The MongoFlask object
@@ -32,7 +32,7 @@ class MongoDB(object):
         password = app.config.get('MONGO_PASSWORD')
 
         if not host or not port:
-            raise URIMissing(f'MONGO_HOST and MONGO_PORT cannot be "{type(None)}"')
+            raise URIMissing('MONGO_HOST and MONGO_PORT cannot be None')
 
         if not db_name:
             raise DatabaseException()
@@ -57,9 +57,21 @@ class MongoDB(object):
     @property
     def collections(self):
         return self.__collections
+    
+    def __getitem__(self, arg) -> t.Union[t.Type[CollectionModel], None]:
+        col = self.__collections.get(arg)
+        if col is None:
+            raise CollectionException('Invalid collection name')
+        return col
+    
+    def __iter__(self):
+        return iter(self.__collections.values())
 
     def __str__(self) -> str:
-        return str(self.collections)
+        return f"{self.db.name}:{list(self.collections.keys())}"
+    
+    def __repr__(self) -> str:
+        return f"Mongo(app={self.app})"
 
     def __database__(self, db_name=None):
         """
@@ -97,7 +109,7 @@ class MongoDB(object):
         self.__collections.update({name: _collection})
         return self.collections.get(name) is not None
     
-    def get_collection(self, collection: t.Union[str, t.Type[CollectionModel]]):
+    def get_collection(self, collection: t.Union[str, t.Type[CollectionModel]], default=None):
         """
         Retrieves a Collection instance from the collections attribute.
 
@@ -107,13 +119,14 @@ class MongoDB(object):
         try:
             collection_name = collection.collection_name
         except AttributeError:
-            collection_name = collection.collection_name
+            collection_name = collection
         if not isinstance(collection_name, str):
             raise Exception('Must pass a collection or collection name')
-        collection_to_return = self.collections.get(collection_name)
-        if not collection_to_return:
-            raise CollectionException('Collection invalid')
-        return collection_to_return
+        try:
+            collection_to_return = self.collections[collection_name]
+            return collection_to_return
+        except KeyError:
+            return default
     
     def session(self, causal_consistency=None, default_transaction_options=None, 
                 snapshot=False):
