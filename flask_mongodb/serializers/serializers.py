@@ -61,9 +61,7 @@ class SerializerBase(BaseForm):
             raise NotImplementedError('CSRF Token field is called but not created')
         return self._csrf_token_field
 
-class Serializer(SerializerBase, metaclass=FormMeta):
-    __validated__ = False
-    
+class Serializer(SerializerBase, metaclass=FormMeta):    
     Meta = SerializerMeta
 
     def __init__(self, data=None, formdata=None, obj=None, prefix="", meta=None, **kwargs):
@@ -96,6 +94,7 @@ class Serializer(SerializerBase, metaclass=FormMeta):
         """
         if formdata and data:
             raise ValueError('Only data or formdata can be passed, not both')
+        self.__validated__ = False
         self._validated_data = {}
         
         meta_obj = self._wtforms_meta()
@@ -120,11 +119,7 @@ class Serializer(SerializerBase, metaclass=FormMeta):
                 self._validated_data[name] = field.data
         if raise_exception and errors['errors']:
             raise ValidationError(message=errors)
-        if errors['errors']:
-            return errors
-        else:
-            self.__validated__ = True
-            return self.__validated__
+        return self.__validated__
 
     @property
     def validated_data(self):
@@ -173,8 +168,10 @@ class Serializer(SerializerBase, metaclass=FormMeta):
             inline = getattr(self.__class__, f"validate_{name}", None)
             if inline is not None:
                 extra.setdefault(name, []).append(inline)
-
-        return super().validate(extra)
+        is_valid = super().validate(extra)
+        if is_valid:
+            self.__validated__ = True
+        return is_valid
 
 
 class ModelSerializer(Serializer, ModelMixin):
