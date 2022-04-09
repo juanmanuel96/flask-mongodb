@@ -126,10 +126,6 @@ class Serializer(SerializerBase, metaclass=FormMeta):
         if not self.__validated__:
             raise ValidationError('Run method `is_valid` first')
         return self._validated_data
-    
-    @property
-    def data(self):
-        raise ValueError('Use the prefered property: `validated_data`')
 
     def __delitem__(self, name):
         del self._fields[name]

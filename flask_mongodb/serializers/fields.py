@@ -83,7 +83,7 @@ class JSONField(Field):
 
     @property
     def data(self) -> dict:
-        return self.form.validated_data
+        return self.form.data
 
     @property
     def errors(self):
