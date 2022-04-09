@@ -116,6 +116,13 @@ class Serializer(SerializerBase, metaclass=FormMeta):
                 if field.errors:
                     errors['errors'] += [{name: err for err in field.errors}]
                     continue
+        else:
+            for name in self._fields:
+                field = getattr(self, name)
+                if isinstance(field, JSONField):
+                    self._validated_data[name] = {}
+                    for sub_field_name, sub_field in field.form_fields().items():
+                        self._validated_data[name][sub_field_name] = sub_field.data
                 self._validated_data[name] = field.data
         if raise_exception and errors['errors']:
             raise ValidationError(message=errors)
