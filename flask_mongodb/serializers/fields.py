@@ -1,3 +1,4 @@
+from inspect import isclass
 import typing as t
 from wtforms.fields import Field
 from wtforms.utils import unset_value
@@ -10,7 +11,10 @@ class JSONField(Field):
     def __init__(
         self, serializer_class, label=None, validators=None, separator="-", **kwargs
     ):
+        from flask_mongodb.serializers import Serializer
+        
         super().__init__(label, validators, **kwargs)
+        assert issubclass(serializer_class, Serializer)
         self.serializer_class = serializer_class
         self.separator = separator
         self._obj = None
@@ -79,11 +83,11 @@ class JSONField(Field):
 
     @property
     def data(self) -> dict:
-        return self.form.data
+        return self.form.validated_data
 
     @property
     def errors(self):
         return self.form.errors
     
-    def form_fields(self) -> t.OrderedDict:
+    def form_fields(self) -> t.Dict:
         return self.form._fields

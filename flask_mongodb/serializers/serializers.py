@@ -130,20 +130,11 @@ class Serializer(SerializerBase, metaclass=FormMeta):
     def validated_data(self):
         if not self.__validated__:
             raise ValidationError('Run method `is_valid` first')
-        # _validated_data = {}
-        # for name in self._fields:
-        #     field = getattr(self, name)
-        #     if isinstance(field, JSONField):
-        #         _validated_data[name] = {}
-        #         for sub_field_name, sub_field in field.data.items():
-        #             _validated_data[name][sub_field_name] = sub_field.data
-        #     _validated_data[name] = field.data
-        # return _validated_data
         return self._validated_data
     
     @property
     def data(self):
-        raise NotImplementedError('Use the prefered property: `validated_data`')
+        raise ValueError('Use the prefered property: `validated_data`')
 
     def __delitem__(self, name):
         del self._fields[name]
