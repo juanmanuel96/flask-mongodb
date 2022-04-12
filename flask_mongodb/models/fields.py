@@ -161,7 +161,7 @@ class DateField(Field):
     
     @property
     def data(self) -> date:
-        return self.__data__.date()
+        return self.__data__
     
     @data.setter
     def data(self, value):
