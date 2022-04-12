@@ -2,7 +2,7 @@ import typing as t
 import itertools as iter
 
 from bson import ObjectId
-from datetime import datetime
+from datetime import date, datetime
 from werkzeug.security import generate_password_hash
 
 from flask_mongodb.core.exceptions import InvalidChoice
@@ -145,15 +145,15 @@ class DateField(Field):
     bson_type = 'date'
     
     def __init__(self, format='%Y-%m-%d', required: bool = True, data: t.Union[str, datetime] = None,
-                 allow_null=False, default: t.Union[datetime, None]=datetime(1901, 1, 1, 0, 0, 0, 0)) -> None:
+                 allow_null=False, default: t.Union[datetime, date, None]=datetime(1901, 1, 1, 0, 0, 0, 0)) -> None:
         self.format = format
         super().__init__(required=required, data=data, allow_null=allow_null, default=default)
     
-    def validate_data(self, value: t.Union[str, datetime], fmt: str = None):
+    def validate_data(self, value: t.Union[str, datetime, date], fmt: str = None):
         fmt = self.format if not fmt else fmt
         if not self._check_if_allow_null(value):
-            if not any([isinstance(value, valid) for valid in [str, datetime]]):
-                raise TypeError(f'Incoming data must be str or datetime')
+            if not any([isinstance(value, valid) for valid in [str, datetime, date]]):
+                raise TypeError(f'Incoming data must be str, datetime, or date')
             if isinstance(value, str):
                 # Will validate that the incoming value as srting can return a valid datetime obj
                 datetime.strptime(value, fmt)
@@ -167,21 +167,14 @@ class DateField(Field):
     def data(self, value):
         to_data = self.validate_data(value)
         if isinstance(to_data, str):
-            try:
-                to_data = datetime.strptime(to_data, self.format)
-            except ValueError:
-                # TODO: Replace this exception with a regular validator error
-                raise Exception('Invalid date format')
+            to_data = datetime.strptime(to_data, self.format)
+        to_data = to_data if isinstance(to_data, date) else to_data.date
         self.__data__ = to_data
-    
-    def strftime(self, fmt: str = None):
-        fmt = self.format if not fmt else fmt
-        return self.data.strftime(fmt)
 
 
 class DatetimeField(DateField):
     def __init__(self, required: bool = True, data: t.Union[str, datetime] = None, allow_null=False, 
-                 default: datetime = datetime.now()) -> None:
+                 default: t.Union[datetime, None] = datetime.now()) -> None:
         super().__init__(format=None, required=required, data=data, allow_null=allow_null, default=default)
     
     @property
@@ -195,6 +188,10 @@ class DatetimeField(DateField):
         if isinstance(to_data, str):
             to_data = datetime.strptime(value, fmt)
         self.__data__ = to_data
+    
+    def strftime(self, fmt: str = None):
+        fmt = self.format if not fmt else fmt
+        return self.data.strftime(fmt)
 
 
 class JsonField(Field):
