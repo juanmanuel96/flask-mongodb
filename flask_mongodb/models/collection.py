@@ -55,19 +55,19 @@ class CollectionModel(BaseCollection):
     def __iter__(self):
         return iter(self._fields.values())
     
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"{self.__class__}.{self.collection_name}"
 
     @property
-    def collection(self) -> MongoCollection:
+    def collection(self):
         return self.__collection__
 
     @property
-    def fields(self) -> t.Dict[str, Field]:
+    def fields(self):
         return self._fields
     
     @property
-    def model_data(self) -> dict[str, t.Any]:
+    def model_data(self):
         _data = {}
         for name, field in self.fields.items():
             if isinstance(field, JsonField):
@@ -78,11 +78,11 @@ class CollectionModel(BaseCollection):
                 _data[name] = field.data
         return _data
     
-    def set_model_data(self, data: dict) -> None:
+    def set_model_data(self, data: dict):
         self.__data__ = data
         self.__assign_data_to_fields__()
 
-    def __define_validators__(self) -> dict:
+    def __define_validators__(self):
         validators = {
             '$jsonSchema': {
                 "bsonType": "object",
@@ -148,7 +148,7 @@ class CollectionModel(BaseCollection):
                 field.data = value
     
     def serialize_fields(self, document: t.Dict, 
-                         fields: t.Union[str, t.List]) -> t.Dict:
+                         fields: t.Union[str, t.List]):
         """Converts to str fields of interest
 
         Args:

@@ -160,15 +160,15 @@ class DateField(Field):
         return super().validate_data(value)
     
     @property
-    def data(self) -> datetime:
-        return self.__data__
+    def data(self) -> date:
+        return self.__data__.date()
     
     @data.setter
     def data(self, value):
         to_data = self.validate_data(value)
         if isinstance(to_data, str):
             to_data = datetime.strptime(to_data, self.format)
-        to_data = to_data if isinstance(to_data, date) else to_data.date
+        to_data = to_data if isinstance(to_data, datetime) else datetime(to_data.year, to_data.month, to_data.year)
         self.__data__ = to_data
 
 
