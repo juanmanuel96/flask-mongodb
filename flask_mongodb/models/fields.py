@@ -168,7 +168,7 @@ class DateField(Field):
         to_data = self.validate_data(value)
         if isinstance(to_data, str):
             to_data = datetime.strptime(to_data, self.format)
-        to_data = to_data if isinstance(to_data, datetime) else datetime(to_data.year, to_data.month, to_data.day)
+        to_data = to_data if isinstance(to_data, datetime) or self._check_if_allow_null() else datetime(to_data.year, to_data.month, to_data.day)
         self.__data__ = to_data
 
 
@@ -187,7 +187,7 @@ class DatetimeField(DateField):
         to_data = self.validate_data(value, fmt)
         if isinstance(to_data, str):
             to_data = datetime.strptime(value, fmt)
-        to_data = to_data if isinstance(to_data, datetime) else datetime(to_data.year, to_data.month, to_data.day)
+        to_data = to_data if isinstance(to_data, datetime) or self._check_if_allow_null() else datetime(to_data.year, to_data.month, to_data.day)
         self.__data__ = to_data
     
     def strftime(self, fmt: str = None):
