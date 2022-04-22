@@ -32,8 +32,15 @@ if f"{sys.version_info.major}.{sys.version_info.minor}" not in __py_versions__:
 
 from flask_mongodb.core.mongo import MongoDB
 from flask_mongodb.core import exceptions
+from flask_mongodb.serializers import Serializer, ModelSerializer, fields
+from flask_mongodb.globals import get_current_mongo, current_mongo
 
 __all__ = (
     "MongoDB",
-    "exceptions"
+    "exceptions",
+    "Serializer",
+    "ModelSerializer",
+    "fields",
+    "get_current_mongo",
+    "current_mongo"
 )

@@ -59,7 +59,7 @@ class CollectionModel(BaseCollection):
         return f"{self.__class__}.{self.collection_name}"
 
     @property
-    def collection(self):
+    def collection(self) -> MongoCollection:
         return self.__collection__
 
     @property
