@@ -125,13 +125,13 @@ class Serializer(SerializerBase, metaclass=FormMeta):
                         self._validated_data[name][sub_field_name] = sub_field.data
                 self._validated_data[name] = field.data
         if raise_exception and errors['errors']:
-            raise ValidationError(message=errors)
+            raise ValidationError(message=f"{errors}")
         return self.__validated__
 
     @property
     def validated_data(self):
         if not self.__validated__:
-            raise ValidationError('Run method `is_valid` first')
+            raise ValidationError("Run method `is_valid` first")
         return self._validated_data
 
     def __delitem__(self, name):
