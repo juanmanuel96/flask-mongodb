@@ -8,36 +8,69 @@ from flask_mongodb.models.fields import Field, JsonField, ObjectIDField
 
 
 class BaseCollection(object):
-    def __init__(self) -> None:
-        self.__dict__ = {name: getattr(self, name, None) for name in dir(self) 
-                         if (not name.startswith('_') and name not in self.__dict__) or name == '_id'}
-
-    def __setattr__(self, key: str, value):
-        if issubclass(type(self.__dict__.get(key)), Field):
-            self.__dict__[key].data = value
-        else:
-            super().__setattr__(key, value)
-
-
-class CollectionModel(BaseCollection):
     collection_name: str = None
     validation_level: str = 'strict'
     _id = ObjectIDField()
+    
+    def __init__(self) -> None:
+        self._fields = dict()
+        self.__collection__: MongoCollection = None
+        
+        for name in dir(self):
+            if not name.startswith('_') or name == '_id':
+                attr = getattr(self, name)
+                if hasattr(attr, '_model_field'):
+                    self._fields[name] = attr
+    
+    def __setitem__(self, __name: str, __value: t.Any):
+        field = self._fields.get(__name, None)
+        if field is None:
+            raise KeyError(f'CollectionModel does not field with name {__name}')
+        if hasattr(__value, '_model_data'):
+            raise ValueError('Cannot assign model field to this model field')
+        field.data = __value
+    
+    def __getitem__(self, __name: str):
+        field = self._fields.get(__name, None)
+        if field is None:
+            raise KeyError(f'Not a valid field with name {__name}')
+        return field.data
+    
+    def __str__(self):
+        return self.collection_name
+    
+    def __iter__(self):
+        return iter(self._fields.values())
+    
+    def __repr__(self):
+        return f"{self.__class__}.{self.collection_name}"
+    
+    def __contains__(self, __name: str):
+        return __name in self._fields
+    
+    @property
+    def fields(self) -> dict:
+        return self._fields
+    
+    @property
+    def pk(self):
+        return self._id.data
 
+
+class CollectionModel(BaseCollection):
     def __init__(self, database):
-        super(CollectionModel, self).__init__()
         self.__data__ = {}
+        super(CollectionModel, self).__init__()
         
         if not self.collection_name:
             raise CollectionException('Need a collection name')
-        self._fields = {}
-        self.__collection__: MongoCollection = None
 
         # _id field must be excluded from the list of attrs not to include
         for attrib_name in [_ for _ in dir(self) if not _.startswith('_') or _ =='_id']:
             attrib = getattr(self, attrib_name)
             if issubclass(type(attrib), Field):
                 self._fields[attrib_name] = attrib
+        
         self.validators = self.__define_validators__()
         try:
             # Will first try to create a collection
@@ -48,23 +81,10 @@ class CollectionModel(BaseCollection):
         except OperationFailure:
             # If collection exists, use that collection
             self.__collection__ = MongoCollection(database, self.collection_name)
-
-    def __str__(self):
-        return self.collection_name
     
-    def __iter__(self):
-        return iter(self._fields.values())
-    
-    def __repr__(self):
-        return f"{self.__class__}.{self.collection_name}"
-
     @property
     def collection(self) -> MongoCollection:
         return self.__collection__
-
-    @property
-    def fields(self):
-        return self._fields
     
     @property
     def model_data(self):

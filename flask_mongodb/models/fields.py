@@ -9,6 +9,7 @@ from flask_mongodb.core.exceptions import InvalidChoice
 
 
 class Field:
+    _model_field = True
     bson_type: str = None
 
     def __init__(self, required: bool = True, data: t.Any = None, allow_null=False, default=None) -> None:
