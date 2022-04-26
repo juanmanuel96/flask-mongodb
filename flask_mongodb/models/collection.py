@@ -1,26 +1,44 @@
+from copy import deepcopy
 import typing as t
 
 from pymongo.errors import OperationFailure
 from flask_mongodb.core.exceptions import CollectionException
 
 from flask_mongodb.core.wrappers import MongoCollection
-from flask_mongodb.models.fields import Field, JsonField, ObjectIDField
+from flask_mongodb.models.document_set import CollectionManager
+from flask_mongodb.models.fields import JsonField, ObjectIDField
 
 
-class BaseCollection(object):
+class BaseCollection:
     collection_name: str = None
+    schemaless = False
     validation_level: str = 'strict'
+    manager = CollectionManager
     _id = ObjectIDField()
     
     def __init__(self) -> None:
         self._fields = dict()
         self.__collection__: MongoCollection = None
+        if not self.manager:
+            raise ValueError('Missing collection manager')
+        setattr(self, 'manager', self.manager(self))
+        self.db = None
         
         for name in dir(self):
             if not name.startswith('_') or name == '_id':
                 attr = getattr(self, name)
                 if hasattr(attr, '_model_field'):
                     self._fields[name] = attr
+    
+    def __getattribute__(self, __name: str) -> t.Any:
+        attr = super().__getattribute__(__name)
+        if hasattr(attr, '_model_field'):
+            try:
+                return self._fields[__name].data
+            except KeyError:
+                return attr
+        else:
+            return attr
     
     def __setitem__(self, __name: str, __value: t.Any):
         field = self._fields.get(__name, None)
@@ -48,18 +66,32 @@ class BaseCollection(object):
     def __contains__(self, __name: str):
         return __name in self._fields
     
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        return result
+    
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        return result
+    
     @property
     def fields(self) -> dict:
         return self._fields
     
     @property
     def pk(self):
-        return self._id.data
+        return self._id
 
 
 class CollectionModel(BaseCollection):
-    def __init__(self, database):
-        self.__data__ = {}
+    def __init__(self, **field_values):
+        self.__data__ = {} if not field_values else field_values
         super(CollectionModel, self).__init__()
         
         if not self.collection_name:
@@ -68,39 +100,33 @@ class CollectionModel(BaseCollection):
         # _id field must be excluded from the list of attrs not to include
         for attrib_name in [_ for _ in dir(self) if not _.startswith('_') or _ =='_id']:
             attrib = getattr(self, attrib_name)
-            if issubclass(type(attrib), Field):
+            if hasattr(attrib, '_model_data'):
                 self._fields[attrib_name] = attrib
         
-        self.validators = self.__define_validators__()
-        try:
-            # Will first try to create a collection
-            self.__collection__ = MongoCollection(database, self.collection_name, 
-                                                  create=True,
-                                                  validator=self.validators,  
-                                                  validationLevel=self.validation_level)
-        except OperationFailure:
-            # If collection exists, use that collection
-            self.__collection__ = MongoCollection(database, self.collection_name)
+        if self.__data__:
+            "Assign the respective field their data, even if the field does not exist"
+            for name, data in self.__data__.items():
+                field = self._fields.get(name, None)
+                if field is None:
+                    raise AttributeError(f'Collection does not have field {name}')
+                field.data = data
+        
+        self.validators = None
     
     @property
     def collection(self) -> MongoCollection:
         return self.__collection__
     
-    @property
-    def model_data(self):
+    def model_data(self, as_str=False):
         _data = {}
         for name, field in self.fields.items():
             if isinstance(field, JsonField):
                 _data[name] = {}
                 for prop_name, prop_field in field.properties.items():
-                    _data[name][prop_name] = prop_field.data
+                    _data[name][prop_name] = prop_field.data if not as_str else str(prop_field.data)
             else:
-                _data[name] = field.data
+                _data[name] = field.data if not as_str else str(field.data)
         return _data
-    
-    def set_model_data(self, data: dict):
-        self.__data__ = data
-        self.__assign_data_to_fields__()
 
     def __define_validators__(self):
         validators = {
@@ -167,6 +193,23 @@ class CollectionModel(BaseCollection):
             if value is not None:
                 field.data = value
     
+    def connect(self, database):
+        # self.db = database
+        self.validators = self.__define_validators__() if not self.schemaless else None
+        try:
+            # Will first try to create a collection
+            self.__collection__ = MongoCollection(database, self.collection_name, 
+                                                  create=True,
+                                                  validator=self.validators,
+                                                  validationLevel=self.validation_level if not self.schemaless else None)
+        except OperationFailure:
+            # If collection exists, use that collection
+            self.__collection__ = MongoCollection(database, self.collection_name)
+    
+    def set_model_data(self, data: dict):
+        self.__data__ = data
+        self.__assign_data_to_fields__()
+    
     def serialize_fields(self, document: t.Dict, 
                          fields: t.Union[str, t.List]):
         """Converts to str fields of interest
@@ -192,3 +235,6 @@ class CollectionModel(BaseCollection):
                 continue
             document[_field] = str(document[_field])
         return document
+    
+    def save(self, force=False):
+        pass

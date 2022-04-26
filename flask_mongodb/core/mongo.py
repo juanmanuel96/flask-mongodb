@@ -105,7 +105,8 @@ class MongoDB:
         """
         Inserts a new collection into the collections attribute.
         """
-        _collection = collection_cls(self.db)
+        _collection = collection_cls()
+        _collection.connect(self.db)
         self.__collections.update({name: _collection})
         return self.collections.get(name) is not None
     
@@ -133,3 +134,10 @@ class MongoDB:
         return self.client.start_session(causal_consistency=causal_consistency,
                                          default_transaction_options=default_transaction_options,
                                          snapshot=snapshot)
+    
+    def connect(self):
+        for col in self.__collections.values():
+            col.connect(self.db)
+    
+    def disconnect(self):
+        return self.client.close()

@@ -1,3 +1,4 @@
+from copy import deepcopy
 import typing as t
 import itertools as iter
 
@@ -11,13 +12,20 @@ from flask_mongodb.core.exceptions import InvalidChoice
 class Field:
     _model_field = True
     bson_type: str = None
+    _validator_description = None
 
-    def __init__(self, required: bool = True, data: t.Any = None, allow_null=False, default=None) -> None:
+    def __init__(self, required: bool = True, data: t.Any = None, allow_null=False, default=None, 
+                 clean_data_func=None) -> None:
         """
         Simple Field class for inheritance by other field types
         """
+        if clean_data_func and not callable(clean_data_func):
+            raise ValueError('`clean_data_func` must be callable')
+
+        self.clean_data_func = None
         self.required = required
         self.allow_null = allow_null
+        
         self.__data__ = self.validate_data(data) if data else self.validate_data(default) 
 
     @property
@@ -30,6 +38,8 @@ class Field:
         self.__data__ = value
 
     def clean_data(self):
+        if self.clean_data_func:
+            return self.clean_data_func(self.data)
         return self.data
 
     def validate_data(self, value):
@@ -42,6 +52,20 @@ class Field:
             return True
         else:
             return False
+    
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        return result
+    
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        return result
 
 
 class ObjectIDField(Field):
