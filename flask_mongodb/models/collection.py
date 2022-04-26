@@ -1,12 +1,12 @@
-from copy import deepcopy
 import typing as t
+from copy import deepcopy
 
 from pymongo.errors import OperationFailure
 from flask_mongodb.core.exceptions import CollectionException
 
 from flask_mongodb.core.wrappers import MongoCollection
-from flask_mongodb.models.document_set import CollectionManager
 from flask_mongodb.models.fields import JsonField, ObjectIDField
+from flask_mongodb.models.manager import CollectionManager
 
 
 class BaseCollection:
@@ -91,7 +91,8 @@ class BaseCollection:
 
 class CollectionModel(BaseCollection):
     def __init__(self, **field_values):
-        self.__data__ = {} if not field_values else field_values
+        self._initial = {} if not field_values else field_values
+        self._update = {}
         super(CollectionModel, self).__init__()
         
         if not self.collection_name:
@@ -103,23 +104,41 @@ class CollectionModel(BaseCollection):
             if hasattr(attrib, '_model_data'):
                 self._fields[attrib_name] = attrib
         
-        if self.__data__:
+        if self._initial:
             "Assign the respective field their data, even if the field does not exist"
-            for name, data in self.__data__.items():
+            for name, data in self._initial.items():
                 field = self._fields.get(name, None)
                 if field is None:
-                    raise AttributeError(f'Collection does not have field {name}')
+                    # If field name not part of collection, ignore it
+                    continue
                 field.data = data
         
-        self.validators = None
+        self.schema_validators = None
+    
+    def __setitem__(self, __name: str, __value: t.Any):
+        field = self._fields.get(__name, None)
+        if field is None:
+            raise KeyError(f'CollectionModel does not field with name {__name}')
+        if hasattr(__value, '_model_data'):
+            raise ValueError('Cannot assign model field to this model field')
+        field.data = __value
+        
+        if __name not in self._update:
+            self._update[__name] = __value
+        else:
+            if self._update[__name] != __value:
+                self._update[__name] = __value
     
     @property
     def collection(self) -> MongoCollection:
         return self.__collection__
     
-    def model_data(self, as_str=False):
+    def data(self, as_str=False, exclude=()):
         _data = {}
         for name, field in self.fields.items():
+            if name in exclude:
+                # Go to next field
+                continue
             if isinstance(field, JsonField):
                 _data[name] = {}
                 for prop_name, prop_field in field.properties.items():
@@ -189,52 +208,34 @@ class CollectionModel(BaseCollection):
 
     def __assign_data_to_fields__(self):
         for name, field in self.fields.items():
-            value = self.__data__.get(name)
-            if value is not None:
-                field.data = value
+            value = self._initial.get(name)
+            if value is None:
+                # Ignore fields that do not exist
+                continue
+            field.data = value
     
     def connect(self, database):
-        # self.db = database
-        self.validators = self.__define_validators__() if not self.schemaless else None
+        self.db = database
+        self.schema_validators = self.__define_validators__() if not self.schemaless else None
         try:
             # Will first try to create a collection
             self.__collection__ = MongoCollection(database, self.collection_name, 
                                                   create=True,
-                                                  validator=self.validators,
+                                                  validator=self.schema_validators,
                                                   validationLevel=self.validation_level if not self.schemaless else None)
         except OperationFailure:
             # If collection exists, use that collection
             self.__collection__ = MongoCollection(database, self.collection_name)
     
     def set_model_data(self, data: dict):
-        self.__data__ = data
+        self._initial = data
         self.__assign_data_to_fields__()
     
-    def serialize_fields(self, document: t.Dict, 
-                         fields: t.Union[str, t.List]):
-        """Converts to str fields of interest
-
-        Args:
-            document (t.Dict): [description]
-            fields (t.Union[str, t.List]): [description]
-
-        Raises:
-            TypeError: [description]
-            ValueError: [description]
-
-        Returns:
-            document (t.Dict): [description]
-        """
-        if not any([isinstance(fields, valid_ins) for valid_ins in [str, list]]):
-            raise TypeError('fields param can only be str or list')
-        fields_to_serialize = fields if isinstance(fields, list) else [fields]
-        for _field in fields_to_serialize:
-            if _field not in self._fields.keys():
-                # If field does not exists or not a valid field,
-                # then continue with the next one
-                continue
-            document[_field] = str(document[_field])
-        return document
-    
-    def save(self, force=False):
-        pass
+    def save(self, update_data: dict = None, force=False, update_type='$set', upsert=False, **other_options):
+        if update_data:
+            self._update.update(**update_data)
+        if not self._update:
+            raise Exception('Cannot save data that has not been modified')
+        update = {update_type: self._update}
+        self.manager.update_one(query={'_id':self._id}, update=update, upsert=upsert, 
+                                bypass_document_validation=force, **other_options)

@@ -1,6 +1,6 @@
-from copy import deepcopy
 import typing as t
 import itertools as iter
+from copy import deepcopy
 
 from bson import ObjectId
 from datetime import date, datetime
@@ -15,7 +15,7 @@ class Field:
     _validator_description = None
 
     def __init__(self, required: bool = True, data: t.Any = None, allow_null=False, default=None, 
-                 clean_data_func=None) -> None:
+                 clean_data_func=None, unique=False) -> None:
         """
         Simple Field class for inheritance by other field types
         """
@@ -25,6 +25,7 @@ class Field:
         self.clean_data_func = None
         self.required = required
         self.allow_null = allow_null
+        self.unique = unique
         
         self.__data__ = self.validate_data(data) if data else self.validate_data(default) 
 
