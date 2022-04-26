@@ -67,6 +67,9 @@ class Field:
         for k, v in self.__dict__.items():
             setattr(result, k, deepcopy(v, memo))
         return result
+    
+    def clear(self):
+        self.__data__ = None
 
 
 class ObjectIDField(Field):

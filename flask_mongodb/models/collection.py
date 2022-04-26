@@ -230,12 +230,3 @@ class CollectionModel(BaseCollection):
     def set_model_data(self, data: dict):
         self._initial = data
         self.__assign_data_to_fields__()
-    
-    def save(self, update_data: dict = None, force=False, update_type='$set', upsert=False, **other_options):
-        if update_data:
-            self._update.update(**update_data)
-        if not self._update:
-            raise Exception('Cannot save data that has not been modified')
-        update = {update_type: self._update}
-        self.manager.update_one(query={'_id':self._id}, update=update, upsert=upsert, 
-                                bypass_document_validation=force, **other_options)
