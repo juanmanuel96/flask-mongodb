@@ -2,8 +2,10 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
 
+from flask_mongodb.core.mixins import InimitableObject
 
-class MongoConnect(MongoClient):
+
+class MongoConnect(MongoClient, InimitableObject):
     """
     Wrapper from the pymongo.MongoClient class
     """
@@ -20,7 +22,7 @@ class MongoConnect(MongoClient):
         return attr
 
 
-class MongoDatabase(Database):
+class MongoDatabase(Database, InimitableObject):
     """
     Wrapper for the pymongo.database.Database class
     """
@@ -37,7 +39,7 @@ class MongoDatabase(Database):
         return item_
 
 
-class MongoCollection(Collection):
+class MongoCollection(Collection, InimitableObject):
     """
     Wrapper class for the pymongo.collection.Collection class
     """

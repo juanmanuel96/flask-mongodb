@@ -61,7 +61,7 @@ class SerializerBase(BaseForm):
             raise NotImplementedError('CSRF Token field is called but not created')
         return self._csrf_token_field
 
-class Serializer(SerializerBase, metaclass=FormMeta):    
+class Serializer(SerializerBase, metaclass=FormMeta):
     Meta = SerializerMeta
 
     def __init__(self, data=None, formdata=None, obj=None, prefix="", meta=None, **kwargs):

@@ -1,7 +1,5 @@
 import typing as t
 
-from flask_mongodb.core.wrappers import MongoCollection
-
 
 class ModelMixin:
     @property
@@ -9,7 +7,11 @@ class ModelMixin:
         from flask_mongodb.models import CollectionModel
         self._model: t.Type[CollectionModel]
         return self._model
+
+
+class InimitableObject:
+    def __copy__(self):
+        return None
     
-    @property
-    def collection(self) -> MongoCollection:
-        return self._model.collection
+    def __deepcopy__(self, memo):
+        return None
