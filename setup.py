@@ -12,7 +12,7 @@ setup(
     author_email=__author_email__,
     license='BSD-2-Clause License',
     packages=find_packages(),
-    install_requires=['flask', 'pymongo', 'flask-wtf', 'wtform', 'email-validator'],
+    install_requires=['flask', 'pymongo', 'wtforms', 'email-validator'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',

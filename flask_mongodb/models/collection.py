@@ -29,17 +29,7 @@ class BaseCollection:
                 attr = getattr(self, name)
                 if hasattr(attr, '_model_field'):
                     self._fields[name] = attr
-    
-    def __getattribute__(self, __name: str) -> t.Any:
-        attr = super().__getattribute__(__name)
-        if hasattr(attr, '_model_field'):
-            try:
-                return self._fields[__name].data
-            except KeyError:
-                return attr
-        else:
-            return attr
-    
+
     def __setitem__(self, __name: str, __value: t.Any):
         field = self._fields.get(__name, None)
         if field is None:
@@ -102,7 +92,8 @@ class CollectionModel(BaseCollection):
         for attrib_name in [_ for _ in dir(self) if not _.startswith('_') or _ =='_id']:
             attrib = getattr(self, attrib_name)
             if hasattr(attrib, '_model_data'):
-                self._fields[attrib_name] = attrib
+                # Make fields accessible by the dot convension
+                setattr(self, attrib_name, attrib)
         
         if self._initial:
             "Assign the respective field their data, even if the field does not exist"
