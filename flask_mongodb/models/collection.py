@@ -5,7 +5,7 @@ from pymongo.errors import OperationFailure
 from flask_mongodb.core.exceptions import CollectionException
 
 from flask_mongodb.core.wrappers import MongoCollection
-from flask_mongodb.models.fields import JsonField, ObjectIDField
+from flask_mongodb.models.fields import EmbeddedDocumentField, EnumField, Field, ObjectIdField
 from flask_mongodb.models.manager import CollectionManager
 
 
@@ -14,7 +14,7 @@ class BaseCollection:
     schemaless = False
     validation_level: str = 'strict'
     manager = CollectionManager
-    _id = ObjectIDField()
+    _id = ObjectIdField()
     
     def __init__(self) -> None:
         self._fields = dict()
@@ -76,7 +76,7 @@ class BaseCollection:
     
     @property
     def pk(self):
-        return self._id
+        return self._id.data
 
 
 class CollectionModel(BaseCollection):
@@ -130,7 +130,7 @@ class CollectionModel(BaseCollection):
             if name in exclude:
                 # Go to next field
                 continue
-            if isinstance(field, JsonField):
+            if isinstance(field, EmbeddedDocumentField):
                 _data[name] = {}
                 for prop_name, prop_field in field.properties.items():
                     _data[name][prop_name] = prop_field.data if not as_str else str(prop_field.data)
@@ -149,53 +149,85 @@ class CollectionModel(BaseCollection):
         for name, field in self.fields.items():
             if field.required:
                 validators["$jsonSchema"]["required"].append(name)
-            if not field.allow_null:
-                validators["$jsonSchema"]["properties"][name] = {
-                    "bsonType": [field.bson_type]
-                }
-            else:
-                validators["$jsonSchema"]["properties"][name] = {
-                    "bsonType": [field.bson_type, "null"]
+            
+            # Defining field BSON types
+            if field.bson_type is not None:
+                validators['$jsonSchema']["properties"][name] = {
+                    "bsonType": field.bson_type
                 }
 
+                # If has BSON Type, check if null is allowed and add it
+                if field.allow_null:
+                    validators["$jsonSchema"]["properties"][name]["bsonType"].append('null')
+            
+            if isinstance(field, EnumField):
+                if field.bson_type is not None:
+                    # TODO: Exception needed here
+                    raise Exception('The enum of the EnumField will establish the valid types')
+                
+                enum = {'enum': field.enum}
+                if field.allow_null:
+                    enum['enum'].append('null')
+                validators['$jsonSchema']['properties'][name] = enum
+
+            # Add max_length if it has it
             if max_length := getattr(field, 'max_length', None):
                 validators["$jsonSchema"]["properties"][name].update({'maxLength': max_length})
 
+            # Add min_length if it has it
             if min_length := getattr(field, 'min_length', None):
                 validators["$jsonSchema"]["properties"][name].update({'minLength': min_length})
-
-            if isinstance(field, JsonField):
-                validators['$jsonSchema']["properties"][name]["required"] = []
-                
-                for prop_name, prop_field in field.properties.items():
-                    if isinstance(prop_field, JsonField):
-                        raise CollectionException('Document can only have two levels of objects')
-                    
-                    validators["$jsonSchema"]["properties"][name]["properties"] = {prop_name: {}}
-                    if prop_field.required:
-                        validators['$jsonSchema']["properties"][name]["required"].append(prop_name)
-                    
-                    if not prop_field.allow_null:
-                        validators["$jsonSchema"]["properties"][name]["properties"][prop_name] = {
-                            "bsonType": [prop_field.bson_type]
-                        }
-                    else:
-                        validators["$jsonSchema"]["properties"][name]["properties"][prop_name] = {
-                            "bson_type": [prop_field.bson_type, "null"]
-                        }
-                    
-                    if max_length := getattr(prop_field, 'max_length', None):
-                        validators["$jsonSchema"]["properties"][name]["properties"][prop_name].update({'maxLength': max_length})
-
-                    if min_length := getattr(prop_field, 'min_length', None):
-                        validators["$jsonSchema"]["properties"][name]["properties"][prop_name].update({'minLength': min_length})
             
-                if not validators['$jsonSchema']['properties'][name]['required']:
-                    validators['$jsonSchema']['properties'][name].pop('required')  # If required field empty, remove
-                
+            if field.description:
+                validators["$jsonSchema"]["properties"][name].update({'description': field.description})
+
+            if isinstance(field, EmbeddedDocumentField):
+                sub_validators = self._embedded_document_validators(field)
+                validators['$jsonSchema']['properties'][name].update(sub_validators)
+        
         if not validators['$jsonSchema'].get('required'):
             validators['$jsonSchema'].pop('required')  # Remove required field if empty list
         return validators if validators['$jsonSchema']['properties'] else {}
+    
+    def _embedded_document_validators(self, field: Field):
+        sub_validators = {
+            "bsonType": [],
+            "required": [],
+            "properties": {}
+        }
+        
+        sub_validators['bsonType'] = field.bson_type
+        if field.allow_null:
+            sub_validators['bsonType'].append('null')
+        
+        for prop_name, prop_field in field.properties.items():
+            if prop_field.required:
+                sub_validators["required"].append(prop_name)
+            
+            # Defining field BSON types
+            if prop_field.bson_type is not None:
+                sub_validators["properties"][prop_name] = {
+                    "bsonType": deepcopy(prop_field.bson_type)
+                }
+
+                # If has BSON Type, check if null is allowed and add it
+                if prop_field.allow_null:
+                    sub_validators['properties'][prop_name]["bsonType"].append('null')
+            
+            if max_length := getattr(prop_field, 'max_length', None):
+                sub_validators["properties"][prop_name].update({'maxLength': max_length})
+
+            if min_length := getattr(prop_field, 'min_length', None):
+                sub_validators["properties"][prop_name].update({'minLength': min_length})
+            
+            if isinstance(prop_field, EmbeddedDocumentField):
+                sub_sub_validators = self._embedded_document_validators(prop_field)
+                sub_validators['properties'][prop_name].update(sub_sub_validators)
+    
+        if not sub_validators['required']:
+            sub_validators.pop('required', None)  # If required field empty, remove it
+        
+        return sub_validators
 
     def __assign_data_to_fields__(self):
         for name, field in self.fields.items():

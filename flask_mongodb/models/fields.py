@@ -11,7 +11,7 @@ from flask_mongodb.core.exceptions import InvalidChoice
 
 class Field:
     _model_field = True
-    bson_type: str = None
+    bson_type: list = None
     _validator_description = None
 
     def __init__(self, required: bool = True, data: t.Any = None, allow_null=False, default=None, 
@@ -37,6 +37,10 @@ class Field:
     def data(self, value):
         self.validate_data(value)
         self.__data__ = value
+    
+    @property
+    def description(self):
+        return self._validator_description
 
     def clean_data(self):
         if self.clean_data_func:
@@ -72,8 +76,8 @@ class Field:
         self.__data__ = None
 
 
-class ObjectIDField(Field):
-    bson_type = "objectId"
+class ObjectIdField(Field):
+    bson_type = ["objectId"]
     
     def __init__(self, required: bool = True, data: t.Any = None, 
                  allow_null=False, default=ObjectId()) -> None:
@@ -102,7 +106,7 @@ class ObjectIDField(Field):
 
 
 class StringField(Field):
-    bson_type = 'string'
+    bson_type = ['string']
 
     def __init__(self, min_length=0, max_length=0, required=True, data=None, allow_null=False, default='') -> None:
         self.min_length = min_length
@@ -128,7 +132,7 @@ class PasswordField(StringField):
 
 
 class IntegerField(Field):
-    bson_type = 'int'
+    bson_type = ['int']
     
     def __init__(self, required: bool = True, data: t.Any = None, allow_null=False, default=0) -> None:
         super().__init__(required, data, allow_null, default)
@@ -143,7 +147,7 @@ class IntegerField(Field):
  
 
 class FloatField(Field):
-    bson_type = 'double'
+    bson_type = ['double']
     
     def __init__(self, required: bool = True, data: t.Any = None, allow_null=False, default=0.0) -> None:
         super().__init__(required, data, allow_null, default)
@@ -158,7 +162,7 @@ class FloatField(Field):
 
 
 class BooleanField(Field):
-    bson_type = 'bool'
+    bson_type = ['bool']
 
     def __init__(self, required=True, data=None, allow_null=False, default=False) -> None:
         super(BooleanField, self).__init__(required, data, allow_null, default)
@@ -171,7 +175,7 @@ class BooleanField(Field):
 
 
 class DateField(Field):
-    bson_type = 'date'
+    bson_type = ['date']
     
     def __init__(self, format='%Y-%m-%d', required: bool = True, data: t.Union[str, datetime] = None,
                  allow_null=False, default: t.Union[datetime, date, None]=datetime(1901, 1, 1, 0, 0, 0, 0)) -> None:
@@ -224,8 +228,8 @@ class DatetimeField(DateField):
         return self.data.strftime(fmt)
 
 
-class JsonField(Field):
-    bson_type = 'object'
+class EmbeddedDocumentField(Field):
+    bson_type = ['object']
 
     def __init__(self, properties: t.Dict = None, required=True,
                  data: dict = None, allow_null=False, default={}) -> None:
@@ -238,7 +242,7 @@ class JsonField(Field):
         self.properties: t.Dict[str, Field] = self.__define_properties__(properties)
         if data:
             self._set_properties_data(data)
-        super(JsonField, self).__init__(required=required, data=data, allow_null=allow_null, default=default)
+        super().__init__(required=required, data=data, allow_null=allow_null, default=default)
 
     def __define_properties__(self, properties: t.Dict) -> t.Dict:
         json_field_properties = {}
@@ -284,11 +288,11 @@ class JsonField(Field):
             self._set_properties_data(value)
     
     def __iter__(self):
-        return iter(self.properties.keys())
+        return iter(self.data.keys() or [])
 
 
 class ArrayField(Field):
-    bson_type = 'array'
+    bson_type = ['array']
     
     def __init__(self, required: bool = True, data: t.Any = None, max_items: int = -1, 
                  allow_null=False, default=[]) -> None:
@@ -306,21 +310,76 @@ class ArrayField(Field):
         return iter(self.data or [])
 
 
-class SelectField(Field):
-    bson_type = 'string'
+class EnumField(Field):
+    _validator_descriptor = 'Value must match '
+    bson_type = None
     
     def __init__(self, required: bool = True, data: str = None, 
-                 choices: t.Tuple=None, allow_null=False, default='') -> None:
+                 choices: t.Tuple=None, allow_null=False, default='', 
+                 expected_value_types=['string']) -> None:
+        if not choices:
+            # TODO: Create Exception for missing choices
+            raise Exception('Must include choices')
+        if not expected_value_types:
+            # TODO: Create Exception for missing choices
+            raise Exception('Must provide at leasr one expected value type as a BSON type alias')
+        self.excpected_value_types = expected_value_types
+        
         self.choices = choices
-        self.enum = []
-        for _, choice in self.choices:
-            self.enum.append(choice)
+        self.enum = [choice[0] for choice in choices]
         super().__init__(required=required, data=data, allow_null=allow_null, default=default)
     
     def validate_data(self, value):
         if self._check_if_allow_null(value):
-            if not isinstance(value, str):
-                raise TypeError(f'Incoming data must be string')
-            if (value not in iter.chain(*self.choices)):
+            if (value not in self.enum):
                 raise InvalidChoice("Not a valid choice")
         return super().validate_data(value)
+
+
+class ReferenceIdField(Field):
+    _reference = True
+    bson_type = ["objectId"]
+    _validator_description = 'Must be an objectId type'
+    
+    def __init__(self, model, required: bool = True, data=ObjectId(), allow_null=False, default=None, 
+                 clean_data_func=None, unique=False) -> None:
+        super().__init__(required, data, allow_null, default, clean_data_func, unique)
+        if not isinstance(model, str):
+            raise ValueError('model collection name')
+        self.collection_name = model
+    
+    def validate_data(self, value):
+        if not self._check_if_allow_null(value):
+            if not any([
+                isinstance(value, valid) for valid in [str, ObjectId]
+                ]):
+                raise TypeError("ObjectIDField data can only be "
+                                "str or ObjectID")
+        return super().validate_data(value)
+    
+    @property
+    def data(self) -> t.Union[str, ObjectId]:
+        return super().data
+    
+    @data.setter
+    def data(self, value: t.Union[str, ObjectId]) -> None:
+        valid_data = self.validate_data(value)
+        if isinstance(valid_data, str):
+            # If it's a string, convert to ObjectId
+            valid_data = ObjectId(valid_data)
+        self.__data__ = valid_data
+    
+    @property
+    def reference(self):
+        try:
+            from flask_mongodb.globals import current_mongo
+            reference_model = current_mongo.get_collection(self.collection_name)
+            ref = self._model.manager.find_one(_id=self.data)
+        except IndexError:
+            return None
+        return ref
+
+# Alias to avoid braking changes
+ObjectIDField = ObjectIdField
+SelectField = EnumField
+JsonFielf = EmbeddedDocumentField
