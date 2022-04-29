@@ -7,7 +7,7 @@ from flask_mongodb.core.mixins import InimitableObject
 
 
 class DocumentSet(InimitableObject):
-    def __init__(self, model, cursor=None, document=None):
+    def __init__(self, model, *, cursor=None, document=None):
         self._model = model
         self.cursor: Cursor = cursor
         self.document: t.Dict[str, t.Any] = document
@@ -20,7 +20,10 @@ class DocumentSet(InimitableObject):
                 m.set_model_data(doc)
                 self._set.append(m)
         else:
-            self._model.set_model_data(self.document)
+            from flask_mongodb.models.collection import CollectionModel
+            m: t.Type[CollectionModel] = deepcopy(self._model)
+            m.set_model_data(self.document)
+            return m
         return self
     
     def __iter__(self):

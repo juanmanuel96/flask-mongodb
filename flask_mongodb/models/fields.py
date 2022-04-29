@@ -374,7 +374,7 @@ class ReferenceIdField(Field):
         try:
             from flask_mongodb.globals import current_mongo
             reference_model = current_mongo.get_collection(self.collection_name)
-            ref = self._model.manager.find_one(_id=self.data)
+            ref = reference_model.manager.find_one(_id=self.data)
         except IndexError:
             return None
         return ref

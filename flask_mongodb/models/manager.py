@@ -12,15 +12,17 @@ class CollectionManager(InimitableObject):
     # Read operations
     def find(self, **filter):
         cursor = self._model.collection.find(filter)
-        docuset = DocumentSet(self._model, cursor)()
+        docuset = DocumentSet(self._model, cursor=cursor)()
         return docuset
     
     def find_one(self, **filter):
         if '_id' in filter:
             filter['_id'] = ObjectId(filter['_id'])
-        cursor = self._model.collection.find(filter)
-        docuset = DocumentSet(self._model, cursor)()
-        return docuset.first()
+        doc = self._model.collection.find_one(filter)
+        if doc is None:
+            return None
+        model = DocumentSet(self._model, document=doc)()
+        return model
     
     # Create, Update, Delete (CUD) operations
     def insert_many(self, document_list: t.List[t.Dict], **options):

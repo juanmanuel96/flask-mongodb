@@ -5,7 +5,7 @@ from pymongo.errors import OperationFailure
 from flask_mongodb.core.exceptions import CollectionException
 
 from flask_mongodb.core.wrappers import MongoCollection
-from flask_mongodb.models.fields import EmbeddedDocumentField, EnumField, Field, ObjectIdField
+from flask_mongodb.models.fields import EmbeddedDocumentField, EnumField, Field, ObjectIdField, ReferenceIdField
 from flask_mongodb.models.manager import CollectionManager
 
 
@@ -124,7 +124,7 @@ class CollectionModel(BaseCollection):
     def collection(self) -> MongoCollection:
         return self.__collection__
     
-    def data(self, as_str=False, exclude=()):
+    def data(self, as_str=False, exclude=(), include_reference=True, inlclude_all_references=False):
         _data = {}
         for name, field in self.fields.items():
             if name in exclude:
@@ -134,6 +134,9 @@ class CollectionModel(BaseCollection):
                 _data[name] = {}
                 for prop_name, prop_field in field.properties.items():
                     _data[name][prop_name] = prop_field.data if not as_str else str(prop_field.data)
+            elif isinstance(field, ReferenceIdField) and include_reference:
+                _data[name] = field.reference.data(as_str, exclude, include_reference=inlclude_all_references,
+                                                   inlclude_all_references=inlclude_all_references)
             else:
                 _data[name] = field.data if not as_str else str(field.data)
         return _data
