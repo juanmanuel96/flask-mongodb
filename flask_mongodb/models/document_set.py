@@ -20,8 +20,7 @@ class DocumentSet(InimitableObject):
                 m.set_model_data(doc)
                 self._set.append(m)
         else:
-            from flask_mongodb.models.collection import CollectionModel
-            m: t.Type[CollectionModel] = deepcopy(self._model)
+            m = deepcopy(self._model)
             m.set_model_data(self.document)
             return m
         return self
@@ -49,6 +48,7 @@ class DocumentSet(InimitableObject):
         self._check_if_is_cursor()
         self.cursor = self.cursor.limit(limit)
         if self._set:
+            # Clear the set before limiting
             self._set.clear()
         for doc in self.cursor:
             m = deepcopy(self._model)

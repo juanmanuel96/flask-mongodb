@@ -16,7 +16,7 @@ class CollectionManager(InimitableObject):
         return docuset
     
     def find_one(self, **filter):
-        if '_id' in filter:
+        if '_id' in filter and isinstance(filter['_id'], str):
             filter['_id'] = ObjectId(filter['_id'])
         doc = self._model.collection.find_one(filter)
         if doc is None:

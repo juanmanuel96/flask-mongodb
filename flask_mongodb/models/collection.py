@@ -22,15 +22,18 @@ class BaseCollection:
         if not self.manager:
             raise ValueError('Missing collection manager')
         setattr(self, 'manager', self.manager(self))
+        setattr(self, '_id', self._id)
+        self._fields['_id'] = self._id
         self.db = None
         
         for name in dir(self):
-            if not name.startswith('_') or name == '_id':
+            if not name.startswith('_'):
                 attr = getattr(self, name)
                 if hasattr(attr, '_model_field'):
                     self._fields[name] = attr
 
     def __setitem__(self, __name: str, __value: t.Any):
+        # Dict style assignment
         field = self._fields.get(__name, None)
         if field is None:
             raise KeyError(f'CollectionModel does not field with name {__name}')
@@ -39,6 +42,7 @@ class BaseCollection:
         field.data = __value
     
     def __getitem__(self, __name: str):
+        # Dict style getting
         field = self._fields.get(__name, None)
         if field is None:
             raise KeyError(f'Not a valid field with name {__name}')
@@ -58,17 +62,17 @@ class BaseCollection:
     
     def __copy__(self):
         cls = self.__class__
-        result = cls.__new__(cls)
-        result.__dict__.update(self.__dict__)
-        return result
+        obj = cls.__new__(cls)
+        obj.__dict__.update(self.__dict__)
+        return obj
     
     def __deepcopy__(self, memo):
         cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
+        obj = cls.__new__(cls)
+        memo[id(self)] = obj
         for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
-        return result
+            setattr(obj, k, deepcopy(v, memo))
+        return obj
     
     @property
     def fields(self) -> dict:
@@ -88,12 +92,16 @@ class CollectionModel(BaseCollection):
         if not self.collection_name:
             raise CollectionException('Need a collection name')
 
-        # _id field must be excluded from the list of attrs not to include
-        for attrib_name in [_ for _ in dir(self) if not _.startswith('_') or _ =='_id']:
-            attrib = getattr(self, attrib_name)
-            if hasattr(attrib, '_model_data'):
-                # Make fields accessible by the dot convension
-                setattr(self, attrib_name, attrib)
+        # # _id field must be excluded from the list of attrs not to include
+        # for attrib_name in [_ for _ in dir(self) if not _.startswith('_') or _ =='_id']:
+        #     attrib = getattr(self, attrib_name)
+        #     if hasattr(attrib, '_model_data'):
+        #         # Make fields accessible by the dot convension
+        #         setattr(self, attrib_name, attrib)
+        for name, field in self._fields.items():
+            # Make fields accessible by the dot convension and obscure class attribute
+            # names
+            setattr(self, name, field)
         
         if self._initial:
             "Assign the respective field their data, even if the field does not exist"
@@ -124,7 +132,7 @@ class CollectionModel(BaseCollection):
     def collection(self) -> MongoCollection:
         return self.__collection__
     
-    def data(self, as_str=False, exclude=(), include_reference=True, inlclude_all_references=False):
+    def data(self, as_str=False, exclude=(), include_reference=True, include_all_references=False):
         _data = {}
         for name, field in self.fields.items():
             if name in exclude:
@@ -135,8 +143,14 @@ class CollectionModel(BaseCollection):
                 for prop_name, prop_field in field.properties.items():
                     _data[name][prop_name] = prop_field.data if not as_str else str(prop_field.data)
             elif isinstance(field, ReferenceIdField) and include_reference:
-                _data[name] = field.reference.data(as_str, exclude, include_reference=inlclude_all_references,
-                                                   inlclude_all_references=inlclude_all_references)
+                ref = field.reference
+                if ref is None:
+                    # CONSIDER: If best option is to raise and error
+                    _data[name] = ref
+                    continue
+                _data[name] = field.reference.data(as_str, exclude, 
+                                                    include_reference=include_all_references,
+                                                    include_all_references=include_all_references)
             else:
                 _data[name] = field.data if not as_str else str(field.data)
         return _data
@@ -224,6 +238,7 @@ class CollectionModel(BaseCollection):
                 sub_validators["properties"][prop_name].update({'minLength': min_length})
             
             if isinstance(prop_field, EmbeddedDocumentField):
+                # Support for Embedded documents in embedded documents
                 sub_sub_validators = self._embedded_document_validators(prop_field)
                 sub_validators['properties'][prop_name].update(sub_sub_validators)
     

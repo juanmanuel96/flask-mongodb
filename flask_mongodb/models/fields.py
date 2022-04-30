@@ -60,17 +60,17 @@ class Field:
     
     def __copy__(self):
         cls = self.__class__
-        result = cls.__new__(cls)
-        result.__dict__.update(self.__dict__)
-        return result
+        obj = cls.__new__(cls)
+        obj.__dict__.update(self.__dict__)
+        return obj
     
     def __deepcopy__(self, memo):
         cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
+        obj = cls.__new__(cls)
+        memo[id(self)] = obj
         for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
-        return result
+            setattr(obj, k, deepcopy(v, memo))
+        return obj
     
     def clear(self):
         self.__data__ = None
@@ -371,12 +371,9 @@ class ReferenceIdField(Field):
     
     @property
     def reference(self):
-        try:
-            from flask_mongodb.globals import current_mongo
-            reference_model = current_mongo.get_collection(self.collection_name)
-            ref = reference_model.manager.find_one(_id=self.data)
-        except IndexError:
-            return None
+        from flask_mongodb.globals import current_mongo
+        reference_model = current_mongo.get_collection(self.collection_name)
+        ref = reference_model.manager.find_one(_id=self.data)
         return ref
 
 # Alias to avoid braking changes
