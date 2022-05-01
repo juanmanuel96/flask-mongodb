@@ -126,9 +126,11 @@ class PasswordField(StringField):
         return self.__data__
     
     @data.setter
-    def data(self, value):
+    def data(self, value: str):
         self.validate_data(value)
-        self.__data__ = generate_password_hash(value)
+        if not value.startswith('pbkdf2:sha256:'):
+            # Means the string is plain text and must be hashed
+            self.__data__ = generate_password_hash(value)
 
 
 class IntegerField(Field):
