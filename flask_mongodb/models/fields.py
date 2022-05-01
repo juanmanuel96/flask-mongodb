@@ -131,6 +131,8 @@ class PasswordField(StringField):
         if not value.startswith('pbkdf2:sha256:'):
             # Means the string is plain text and must be hashed
             self.__data__ = generate_password_hash(value)
+        else:
+            self.__data__ = value
 
 
 class IntegerField(Field):
