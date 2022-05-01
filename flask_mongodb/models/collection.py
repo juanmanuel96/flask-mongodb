@@ -91,13 +91,7 @@ class CollectionModel(BaseCollection):
         
         if not self.collection_name:
             raise CollectionException('Need a collection name')
-
-        # # _id field must be excluded from the list of attrs not to include
-        # for attrib_name in [_ for _ in dir(self) if not _.startswith('_') or _ =='_id']:
-        #     attrib = getattr(self, attrib_name)
-        #     if hasattr(attrib, '_model_data'):
-        #         # Make fields accessible by the dot convension
-        #         setattr(self, attrib_name, attrib)
+        
         for name, field in self._fields.items():
             # Make fields accessible by the dot convension and obscure class attribute
             # names
@@ -170,7 +164,7 @@ class CollectionModel(BaseCollection):
             # Defining field BSON types
             if field.bson_type is not None:
                 validators['$jsonSchema']["properties"][name] = {
-                    "bsonType": field.bson_type
+                    "bsonType": deepcopy(field.bson_type)
                 }
 
                 # If has BSON Type, check if null is allowed and add it

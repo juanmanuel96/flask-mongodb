@@ -379,4 +379,4 @@ class ReferenceIdField(Field):
 # Alias to avoid braking changes
 ObjectIDField = ObjectIdField
 SelectField = EnumField
-JsonFielf = EmbeddedDocumentField
+JsonField = EmbeddedDocumentField

@@ -41,6 +41,10 @@ class DocumentSet(InimitableObject):
         self._check_if_is_cursor()
         return self._set[0]
     
+    def last(self):
+        self._check_if_is_cursor()
+        return self._set[-1]
+    
     def count(self):
         return len(self._set)
     
