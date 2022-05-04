@@ -15,7 +15,7 @@ class Field:
     _validator_description = None
 
     def __init__(self, required: bool = True, data: t.Any = None, allow_null=False, default=None, 
-                 clean_data_func=None, unique=False) -> None:
+                 clean_data_func=None) -> None:
         """
         Simple Field class for inheritance by other field types
         """
@@ -25,7 +25,6 @@ class Field:
         self.clean_data_func = None
         self.required = required
         self.allow_null = allow_null
-        self.unique = unique
         
         self.__data__ = self.validate_data(data) if data else self.validate_data(default) 
 
@@ -298,8 +297,10 @@ class EmbeddedDocumentField(Field):
 class ArrayField(Field):
     bson_type = ['array']
     
-    def __init__(self, required: bool = True, data: t.Any = None, max_items: int = -1, 
+    def __init__(self, required: bool = True, data: t.Any = None, min_items: int = -1, max_items=-1,
                  allow_null=False, default=[]) -> None:
+        if min_items > 0:
+            self.min_items = min_items
         if max_items > 0:
             self.max_items = max_items
         super().__init__(required=required, data=data, allow_null=allow_null, default=default)
@@ -312,6 +313,17 @@ class ArrayField(Field):
     
     def __iter__(self):
         return iter(self.data or [])
+
+
+class StructuredArrayField(ArrayField):
+    def __init__(self, items: dict[str, t.Type[Field]], required: bool = True, data: t.Any = None, 
+                 max_items: int = -1, min_items=-1, allow_null=False, default=[], 
+                 unique_items=False) -> None:
+        if not isinstance(items, dict):
+            raise TypeError('items param must be dictionary')
+        self.items = items
+        self.unique_items = unique_items
+        super().__init__(required, data, min_items, max_items, allow_null, default)
 
 
 class EnumField(Field):
@@ -346,8 +358,8 @@ class ReferenceIdField(Field):
     _validator_description = 'Must be an objectId type'
     
     def __init__(self, model, required: bool = True, data=ObjectId(), allow_null=False, default=None, 
-                 clean_data_func=None, unique=False) -> None:
-        super().__init__(required, data, allow_null, default, clean_data_func, unique)
+                 clean_data_func=None) -> None:
+        super().__init__(required, data, allow_null, default, clean_data_func)
         if not isinstance(model, str):
             raise ValueError('model collection name')
         self.collection_name = model
@@ -379,8 +391,3 @@ class ReferenceIdField(Field):
         reference_model = current_mongo.get_collection(self.collection_name)
         ref = reference_model.manager.find_one(_id=self.data)
         return ref
-
-# Alias to avoid braking changes
-ObjectIDField = ObjectIdField
-SelectField = EnumField
-JsonField = EmbeddedDocumentField
