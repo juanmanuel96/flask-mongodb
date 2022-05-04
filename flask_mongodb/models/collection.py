@@ -173,7 +173,7 @@ class CollectionModel(BaseCollection):
                 if field.allow_null:
                     validators["$jsonSchema"]["properties"][name]["bsonType"].append('null')
 
-            # Add min_length if it has it
+            # Add min_length if it has it, applies only to StringField and PasswordField
             if min_length := getattr(field, 'min_length', None):
                 validators["$jsonSchema"]["properties"][name].update({'minLength': min_length})
             
@@ -187,14 +187,15 @@ class CollectionModel(BaseCollection):
             if isinstance(field, EnumField):
                 enums = self._enum_field_validators(field)
                 validators['$jsonSchema']['properties'][name].update({'enum': enums})
-
-            if isinstance(field, EmbeddedDocumentField):
+            elif isinstance(field, EmbeddedDocumentField):
                 embedded_validators = self._embedded_document_validators(field)
                 validators['$jsonSchema']['properties'][name].update(embedded_validators)
-            
-            if isinstance(field, StructuredArrayField):
+            elif isinstance(field, StructuredArrayField):
                 structured_array_validators = self._structured_array_validators(field)
                 validators['$jsonSchema']['properties'][name].update(structured_array_validators)
+            else:
+                # It's another field, continue on
+                pass
         
         if not validators['$jsonSchema'].get('required'):
             validators['$jsonSchema'].pop('required')  # Remove required field if empty list
@@ -240,10 +241,22 @@ class CollectionModel(BaseCollection):
             if min_length := getattr(prop_field, 'min_length', None):
                 sub_validators["properties"][prop_name].update({'minLength': min_length})
             
-            if isinstance(prop_field, EmbeddedDocumentField):
+            if prop_field.description:
+                sub_validators['properties'][prop_name].update({'description': prop_field.description})
+            
+            if isinstance(prop_field, EnumField):
+                in_enum = self._enum_field_validators((prop_field))
+                sub_validators['properties'][prop_name].update(enum=in_enum)
+            elif isinstance(prop_field, EmbeddedDocumentField):
                 # Support for Embedded documents in embedded documents
                 sub_sub_validators = self._embedded_document_validators(prop_field)
                 sub_validators['properties'][prop_name].update(sub_sub_validators)
+            elif isinstance(prop_field, StructuredArrayField):
+                struc_array_validators = self._structured_array_validators(prop_field)
+                sub_validators['properties'][prop_name].update(struc_array_validators)
+            else:
+                # It's another field, continue on
+                pass
     
         if not sub_validators['required']:
             sub_validators.pop('required', None)  # If required field empty, remove it
@@ -286,6 +299,19 @@ class CollectionModel(BaseCollection):
             
             if item_field.description:
                 items['properties'][item_name].update(description=item_field.description)
+            
+            if isinstance(item_field, EmbeddedDocumentField):
+                sub_validators = self._embedded_document_validators(item_field)
+                items['properties'][item_name].update(sub_validators)
+            elif isinstance(item_field, EnumField):
+                in_enum = self._enum_field_validators(item_field)
+                items['properties'][item_name].update({'enum': in_enum})
+            elif isinstance(item_field, StructuredArrayField):
+                struc_array_validators = self._structured_array_validators(item_field)
+                items['properties'][item_name].update(struc_array_validators)
+            else:
+                # It's another field, continue on
+                pass
         
         if not items['required']:
             items.pop('required', None)

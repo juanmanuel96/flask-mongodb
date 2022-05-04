@@ -233,6 +233,7 @@ class DatetimeField(DateField):
 
 class EmbeddedDocumentField(Field):
     bson_type = ['object']
+    _validator_descriptor = 'Values must match the embedded document requirements'
 
     def __init__(self, properties: t.Dict = None, required=True,
                  data: dict = None, allow_null=False, default={}) -> None:
@@ -316,6 +317,7 @@ class ArrayField(Field):
 
 
 class StructuredArrayField(ArrayField):
+    _validator_descriptor = 'Items must match the desired structure'
     def __init__(self, items: dict[str, t.Type[Field]], required: bool = True, data: t.Any = None, 
                  max_items: int = -1, min_items=-1, allow_null=False, default=[], 
                  unique_items=False) -> None:
@@ -327,7 +329,7 @@ class StructuredArrayField(ArrayField):
 
 
 class EnumField(Field):
-    _validator_descriptor = 'Value must match '
+    _validator_descriptor = 'Value must match the enum'
     bson_type = None
     
     def __init__(self, required: bool = True, data: str = None, 
