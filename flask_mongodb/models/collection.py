@@ -4,7 +4,7 @@ from copy import deepcopy
 from pymongo.errors import OperationFailure
 from flask_mongodb.core.exceptions import CollectionException
 
-from flask_mongodb.core.wrappers import MongoCollection
+from flask_mongodb.core.wrappers import MongoCollection, MongoDatabase
 from flask_mongodb.models.fields import EmbeddedDocumentField, EnumField, Field, ObjectIdField, ReferenceIdField, StructuredArrayField
 from flask_mongodb.models.manager import CollectionManager
 
@@ -14,6 +14,7 @@ class BaseCollection:
     schemaless = False
     validation_level: str = 'strict'
     manager = CollectionManager
+    db_alias = 'main'
     _id = ObjectIdField()
     
     def __init__(self) -> None:
@@ -23,8 +24,8 @@ class BaseCollection:
             raise ValueError('Missing collection manager')
         setattr(self, 'manager', self.manager(self))
         setattr(self, '_id', self._id)
+        setattr(self, 'db_alias', self.db_alias)
         self._fields['_id'] = self._id
-        self.db = None
         
         for name in dir(self):
             if not name.startswith('_'):
@@ -123,7 +124,7 @@ class CollectionModel(BaseCollection):
                 self._update[__name] = __value
     
     @property
-    def collection(self) -> MongoCollection:
+    def collection(self) -> t.Union[MongoCollection, None]:
         return self.__collection__
     
     def data(self, as_str=False, exclude=(), include_reference=True, include_all_references=False):
@@ -209,7 +210,7 @@ class CollectionModel(BaseCollection):
         enum = {'enum': field.enum}
         if field.allow_null:
             enum['enum'].append('null')
-        return enum
+        return enum['enum']
     
     def _embedded_document_validators(self, field: EmbeddedDocumentField):
         sub_validators = {
@@ -327,8 +328,7 @@ class CollectionModel(BaseCollection):
                 continue
             field.data = value
     
-    def connect(self, database):
-        self.db = database
+    def connect(self, database: MongoDatabase):
         self.schema_validators = self.__define_validators__() if not self.schemaless else None
         try:
             # Will first try to create a collection
@@ -336,7 +336,7 @@ class CollectionModel(BaseCollection):
                                                   create=True,
                                                   validator=self.schema_validators,
                                                   validationLevel=self.validation_level if not self.schemaless else None)
-        except OperationFailure:
+        except OperationFailure as exc:
             # If collection exists, use that collection
             self.__collection__ = MongoCollection(database, self.collection_name)
     

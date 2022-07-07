@@ -192,3 +192,7 @@ class ModelSerializer(Serializer, ModelMixin):
         else:
             raise MissingSerializerModel('Serializer Model must be specified')
         super().__init__(**kwargs)
+    
+    @property
+    def manager(self):
+        return self._model.manager

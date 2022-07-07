@@ -44,6 +44,10 @@ class DatabaseException(BaseFlaskMongodbException):
     default_message = "MONGO_DATABASE environment variable missing"
 
 
+class DatabaseAliasException(BaseFlaskMongodbException):
+    default_message: str = 'DB alias name does not exist'
+
+
 class CollectionException(BaseFlaskMongodbException):
     default_message = "Collection name attribute cannot be empty str or None"
 

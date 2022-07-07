@@ -1,7 +1,7 @@
 import typing as t
-from flask import request, current_app, Blueprint
+from flask import current_app
 from flask.views import MethodView
-from flask_mongodb.core.exceptions import MissingViewModelException, NotABlueprintView
+from flask_mongodb.core.exceptions import MissingViewModelException
 
 from flask_mongodb.core.mongo import CollectionModel
 from flask_mongodb.core.mixins import ModelMixin

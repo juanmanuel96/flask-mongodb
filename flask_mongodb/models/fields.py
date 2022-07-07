@@ -360,11 +360,10 @@ class ReferenceIdField(Field):
     _validator_description = 'Must be an objectId type'
     
     def __init__(self, model, required: bool = True, data=ObjectId(), allow_null=False, default=None, 
-                 clean_data_func=None) -> None:
+                 clean_data_func=None, related_name='related') -> None:
         super().__init__(required, data, allow_null, default, clean_data_func)
-        if not isinstance(model, str):
-            raise ValueError('model collection name')
-        self.collection_name = model
+        self.related_name = related_name
+        self.model = model
     
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
@@ -390,6 +389,6 @@ class ReferenceIdField(Field):
     @property
     def reference(self):
         from flask_mongodb.globals import current_mongo
-        reference_model = current_mongo.get_collection(self.collection_name)
+        reference_model = current_mongo.get_collection(self.model)
         ref = reference_model.manager.find_one(_id=self.data)
         return ref
