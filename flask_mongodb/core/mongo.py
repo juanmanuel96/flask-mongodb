@@ -2,7 +2,7 @@ import typing as t
 
 from flask import Flask
 
-from flask_mongodb.core.exceptions import DatabaseAliasException, DatabaseException, InvalidClass, URIMissing
+from flask_mongodb.core.exceptions import CollectionInvalid, CouldNotRegisterCollection, DatabaseAliasException, DatabaseException, InvalidClass, URIMissing
 from flask_mongodb.core.wrappers import MongoConnect, MongoDatabase
 from flask_mongodb.models import CollectionModel
 
@@ -20,15 +20,13 @@ class MongoDB:
     
     def init_app(self, app: Flask):
         if 'DATABASE' not in app.config:
-            # TODO: Assign new exception
-            raise Exception('Missing database configurations')
+            raise DatabaseException('Missing database configurations')
         if not isinstance(app.config['DATABASE'], dict):
             raise TypeError('Database configuration must be a dictionary')
         
         database = app.config['DATABASE']
         if 'main' not in database:
-            # TODO: Assign new exception
-            raise Exception('Must identify main database')
+            raise DatabaseException('Must identify main database')
         
         for db_alias, db_details in app.config['DATABASE'].items():
             assert isinstance(db_details, dict)
@@ -84,7 +82,7 @@ class MongoDB:
         _name = collection_cls.collection_name
         success = self._insert_collection(_name, collection_cls)
         if not success:
-            raise Exception('Not success')
+            raise CouldNotRegisterCollection('Not success')
         return success
 
     def _insert_collection(self, name, collection_cls: t.Type[CollectionModel]) -> bool:
@@ -107,7 +105,7 @@ class MongoDB:
         """
         collection_name = collection.collection_name
         if not isinstance(collection_name, str):
-            raise Exception('Must pass a collection or collection name')
+            raise CollectionInvalid('Must pass a collection or collection name')
         try:
             collection_to_return = self.collections[collection.db_alias][collection_name]
             return collection_to_return

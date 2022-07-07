@@ -2,7 +2,7 @@ import typing as t
 from copy import deepcopy
 
 from pymongo.errors import OperationFailure
-from flask_mongodb.core.exceptions import CollectionException
+from flask_mongodb.core.exceptions import CollectionException, FieldError
 
 from flask_mongodb.core.wrappers import MongoCollection, MongoDatabase
 from flask_mongodb.models.fields import EmbeddedDocumentField, EnumField, Field, ObjectIdField, ReferenceIdField, StructuredArrayField
@@ -204,8 +204,7 @@ class CollectionModel(BaseCollection):
     
     def _enum_field_validators(self, field):
         if field.bson_type is not None:
-            # TODO: Exception needed here
-            raise Exception('The enum of the EnumField will establish the valid types')
+            raise FieldError('The enum of the EnumField will establish the valid types')
         
         enum = {'enum': field.enum}
         if field.allow_null:

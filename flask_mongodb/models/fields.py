@@ -6,7 +6,7 @@ from bson import ObjectId
 from datetime import date, datetime
 from werkzeug.security import generate_password_hash
 
-from flask_mongodb.core.exceptions import InvalidChoice
+from flask_mongodb.core.exceptions import FieldError, InvalidChoice
 
 
 class Field:
@@ -336,11 +336,9 @@ class EnumField(Field):
                  choices: t.Tuple=None, allow_null=False, default='', 
                  expected_value_types=['string']) -> None:
         if not choices:
-            # TODO: Create Exception for missing choices
-            raise Exception('Must include choices')
+            raise FieldError('Must include choices')
         if not expected_value_types:
-            # TODO: Create Exception for missing choices
-            raise Exception('Must provide at leasr one expected value type as a BSON type alias')
+            raise FieldError('Must provide at leasr one expected value type as a BSON type alias')
         self.excpected_value_types = expected_value_types
         
         self.choices = choices

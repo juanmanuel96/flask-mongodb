@@ -41,7 +41,7 @@ class URIMissing(BaseFlaskMongodbException):
 
 
 class DatabaseException(BaseFlaskMongodbException):
-    default_message = "MONGO_DATABASE environment variable missing"
+    default_message = "Database name variable missing"
 
 
 class DatabaseAliasException(BaseFlaskMongodbException):
@@ -78,3 +78,11 @@ class InvalidClass(BaseFlaskMongodbException):
 
 class InvalidChoice(BaseFlaskMongodbException):
     default_message = "Not a valid choice"
+
+
+class FieldError(BaseFlaskMongodbException):
+    default_message: str = "There is an error with this field"
+
+
+class CouldNotRegisterCollection(BaseFlaskMongodbException):
+    default_message: str = 'Could not register collection'
