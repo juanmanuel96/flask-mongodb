@@ -2,12 +2,15 @@ import typing as t
 
 from flask import Flask
 
+from flask_mongodb.about import __version__
 from flask_mongodb.core.exceptions import CollectionInvalid, CouldNotRegisterCollection, DatabaseAliasException, DatabaseException, InvalidClass, URIMissing
 from flask_mongodb.core.wrappers import MongoConnect, MongoDatabase
 from flask_mongodb.models import CollectionModel
 
 
 class MongoDB:
+    version = __version__
+    
     def __init__(self, app=None):
         """
         Connect your MongoDB client to a Flask application.
