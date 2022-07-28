@@ -1,13 +1,16 @@
 from setuptools import find_packages, setup
 
 from flask_mongodb.about import (__author__, __author_email__, __description__,
-                               __url__, __version__, __long_description__)
+                               __url__, __version__)
+
+with open('README.md', 'r') as readme_file:
+    long_description = readme_file.read()
 
 setup(
     name='flask_mongodb',
     version=__version__,
     description=__description__,
-    long_description=__long_description__,
+    long_description=long_description,
     url=__url__,
     author=__author__,
     author_email=__author_email__,
