@@ -91,7 +91,10 @@ class CollectionModel(BaseCollection):
         super(CollectionModel, self).__init__()
         
         if not self.collection_name:
-            raise CollectionException('Need a collection name')
+            raise CollectionException('Need to specify the collection_name')
+        
+        if not self.db_alias:
+            raise CollectionException('Need to the specify the db_alais')
         
         for name, field in self._fields.items():
             # Make fields accessible by the dot convension and obscure class attribute

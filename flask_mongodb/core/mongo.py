@@ -1,6 +1,7 @@
 import typing as t
 
 from flask import Flask
+from werkzeug.utils import import_string
 
 from flask_mongodb.about import __version__
 from flask_mongodb.core.exceptions import CollectionInvalid, CouldNotRegisterCollection, DatabaseAliasException, DatabaseException, InvalidClass, URIMissing
@@ -22,8 +23,7 @@ class MongoDB:
             self.init_app(app)
     
     def init_app(self, app: Flask):
-        if 'DATABASE' not in app.config:
-            raise DatabaseException('Missing database configurations')
+        self._set_default_configurations(app)
         if not isinstance(app.config['DATABASE'], dict):
             raise TypeError('Database configuration must be a dictionary')
         
@@ -31,7 +31,7 @@ class MongoDB:
         if 'main' not in database:
             raise DatabaseException('Must identify main database')
         
-        for db_alias, db_details in app.config['DATABASE'].items():
+        for db_alias, db_details in database.items():
             assert isinstance(db_details, dict)
             host = db_details.get('HOST')
             port = db_details.get('PORT')
@@ -40,7 +40,7 @@ class MongoDB:
             db_name = db_details.get('NAME')
             
             if not host or not port:
-                raise URIMissing('MONGO_HOST and MONGO_PORT must be specified')
+                raise URIMissing('HOST and PORT must be specified')
 
             if not db_name:
                 raise DatabaseException()
@@ -53,7 +53,45 @@ class MongoDB:
             db.alias = db_alias
             self.__connections[db_alias] = db
         
+        self._automatic_model_registration(app)
+        
         app.mongo = self
+    
+    def _set_default_configurations(self, app: Flask):
+        db = {
+            'main': {
+                'HOST': 'localhost',
+                'PORT': 27017,
+                'NAME': 'main'
+            }
+        }
+        app.config.setdefault('DATABASE', db)
+        app.config.setdefault('MODELS', [])
+    
+    def _automatic_model_registration(self, app: Flask):
+        if not app.config['MODELS']:
+            return None
+        models_list = []
+        
+        # Prepare a list of modules with their models
+        for mod in app.config['MODELS']:
+            mod = mod + '.models'
+            models = import_string(mod)
+            models_list.append(models)
+        
+        # Itereate over the list and register the models
+        for m in models_list:
+            module_contents = dir(m)  # Get contents of the module
+            for cont in module_contents:
+                obj = getattr(m, cont)  # Get each object
+                
+                # Register the obj as a collection if it has the collection_name
+                # and db_alias attributes which all models should have
+                if hasattr(obj, 'collection_name') and hasattr(obj, 'db_alias'):
+                    if obj.collection_name is None:
+                        # When the collection name is None, it is the base model class
+                        continue
+                    self.__register_collection(obj)
 
     @property
     def collections(self):
