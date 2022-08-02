@@ -1,11 +1,12 @@
 import typing as t
 from copy import deepcopy
-
 from pymongo.errors import OperationFailure
-from flask_mongodb.core.exceptions import CollectionException, FieldError
 
+from flask_mongodb.core.exceptions import CollectionException, FieldError
 from flask_mongodb.core.wrappers import MongoCollection, MongoDatabase
-from flask_mongodb.models.fields import EmbeddedDocumentField, EnumField, Field, ObjectIdField, ReferenceIdField, StructuredArrayField
+from flask_mongodb.models.fields import (EmbeddedDocumentField, EnumField,
+                                         ObjectIdField, ReferenceIdField,
+                                         StructuredArrayField)
 from flask_mongodb.models.manager import CollectionManager
 
 
