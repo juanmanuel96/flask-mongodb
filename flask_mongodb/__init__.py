@@ -1,12 +1,12 @@
 import sys
-from flask_mongodb.about import __author__, __py_version__, __url__, __version__, __description__
+from flask_mongodb.about import PY_VERSION
 from flask_mongodb.core.exceptions import PyVersionInvalid
 
-# Version check
-major, minor, micro = __py_version__.split('.')
+# Python Version check
+major, minor, micro = PY_VERSION.split('.')
 if sys.version_info.major == int(major):
     if sys.version_info.minor < int(minor):
-        raise PyVersionInvalid(f'Python version must greater than or equal to {__py_version__}')
+        raise PyVersionInvalid(f'Python version must greater than or equal to {PY_VERSION}')
 else:
     raise PyVersionInvalid('Major version number must be 3')
 
