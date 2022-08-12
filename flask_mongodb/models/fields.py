@@ -19,26 +19,30 @@ class Field:
         """
         Simple Field class for inheritance by other field types
         """
-        if clean_data_func and not callable(clean_data_func):
+        if clean_data_func and not self._iscallable(clean_data_func):
             raise ValueError('`clean_data_func` must be callable')
         self.clean_data_func = clean_data_func
         self.required = required
         self.allow_null = allow_null
         self.__data__ = None
+        self._validated = False
         
         if default:
             if self._iscallable(default):
-                default = default()
-            self.__data__ = self.validate_data(default) 
+                self.__data__ = default
+            else:
+                self.__data__ = self.validate_data(default) 
 
     @property
     def data(self) -> t.Any:
-        return self.__data__
+        if self._iscallable(self.__data__):
+            return self.__data__()
+        return self.get_data()
 
     @data.setter
     def data(self, value):
-        self.validate_data(value)
-        self.__data__ = value
+        self.run_validation(value)
+        self.set_data(value)
     
     @property
     def description(self):
@@ -69,10 +73,18 @@ class Field:
             setattr(obj, k, deepcopy(v, memo))
         return obj
     
-    def set_data(self, value: t.Any):
-        return value
+    def set_data(self, value: t.Any) -> None:
+        self.__data__ = value
+    
+    def get_data(self) -> t.Any:
+        return self.__data__
+    
+    def run_validation(self, value):
+        if not self._validated:
+            self.validate_data(value)
     
     def validate_data(self, value):
+        self._validated = True
         return value
     
     def clean_data(self):
@@ -100,13 +112,8 @@ class ObjectIdField(Field):
                 raise TypeError("ObjectIDField data can only be "
                                 "str or ObjectID")
         return super().validate_data(value)
-    
-    @property
-    def data(self) -> t.Union[str, ObjectId]:
-        return super().data
-    
-    @data.setter
-    def data(self, value: t.Union[str, ObjectId]) -> None:
+
+    def set_data(self, value: t.Any) -> None:
         valid_data = self.validate_data(value)
         if isinstance(valid_data, str):
             # If it is a string, convert to ObjectId
@@ -131,12 +138,7 @@ class StringField(Field):
 
 
 class PasswordField(StringField):
-    @property
-    def data(self) -> str:
-        return self.__data__
-    
-    @data.setter
-    def data(self, value: str):
+    def set_data(self, value: str):
         self.validate_data(value)
         if not value.startswith('pbkdf2:sha256:'):
             # Means the string is plain text and must be hashed
@@ -207,18 +209,14 @@ class DateField(Field):
                 datetime.strptime(value, fmt)
         return super().validate_data(value)
     
-    @property
-    def data(self) -> date:
-        return self.__data__
-    
-    @data.setter
-    def data(self, value):
+    def set_data(self, value: t.Any) -> None:
         to_data = self.validate_data(value)
         if isinstance(to_data, str):
             to_data = datetime.strptime(to_data, self.format)
         to_data = to_data if isinstance(to_data, datetime) or self._check_if_allow_null(value) \
             else datetime(to_data.year, to_data.month, to_data.day)
         self.__data__ = to_data
+        
 
 
 class DatetimeField(DateField):
@@ -227,17 +225,14 @@ class DatetimeField(DateField):
         super().__init__(format=None, required=required, allow_null=allow_null, default=default,
                          **kwargs)
     
-    @property
-    def data(self) -> datetime:
-        return self.__data__
-    
-    @data.setter
-    def data(self, value: t.Union[str, datetime]):
+    def set_data(self, value: t.Any) -> None:
         fmt = "%Y-%m-%d %H:%M:%S.%f"
         to_data = self.validate_data(value, fmt)
         if isinstance(to_data, str):
             to_data = datetime.strptime(value, fmt)
-        to_data = to_data if isinstance(to_data, datetime) or self._check_if_allow_null(value) else datetime(to_data.year, to_data.month, to_data.day)
+        to_data = to_data if isinstance(to_data, datetime) or \
+            self._check_if_allow_null(value) else \
+                datetime(to_data.year, to_data.month, to_data.day)
         self.__data__ = to_data
     
     def strftime(self, fmt: str = None):
@@ -289,8 +284,7 @@ class EmbeddedDocumentField(Field):
             value = data[prop_name]
             prop_field.data = value
     
-    @property
-    def data(self) -> t.Union[t.Dict, None]:
+    def get_data(self) -> t.Union[t.Dict, None]:
         if self._check_if_allow_null(self.__data__):
             return self.__data__
         json_field_data = {}
@@ -299,8 +293,7 @@ class EmbeddedDocumentField(Field):
         self.__data__ = json_field_data
         return self.__data__
     
-    @data.setter
-    def data(self, value: t.Union[dict, None]):
+    def set_data(self, value: t.Union[dict, None]):
         self.validate_data(value)
         if self._check_if_allow_null(value):
             self.__data__ = value
@@ -392,12 +385,10 @@ class ReferenceIdField(Field):
                                 "str or ObjectID")
         return super().validate_data(value)
     
-    @property
-    def data(self) -> t.Union[str, ObjectId]:
-        return super().data
+    def get_data(self) -> t.Union[str, ObjectId]:
+        return super().get_data()
     
-    @data.setter
-    def data(self, value: t.Union[str, ObjectId]) -> None:
+    def set_data(self, value: t.Union[str, ObjectId]) -> None:
         valid_data = self.validate_data(value)
         if isinstance(valid_data, str):
             # If it's a string, convert to ObjectId
