@@ -1,9 +1,11 @@
+import typing as t
+
 FINAL = 'FINAL'
 RELEASE_CANDIDATE = 'RC'
 VALID_STATES = [FINAL, 'ALPHA', 'BETA', RELEASE_CANDIDATE]
 
 
-def get_version(version_info: tuple) -> str:
+def get_version(version_info: t.Tuple[int, int, int, str,  int]) -> str:
     version_number: tuple[int] = version_info[:3]  # First three numbers are the MAJOR, MINOR, and PATCH
     version_state: str = version_info[3]  # Package state
     state_number: int = version_info[4]  # State number
