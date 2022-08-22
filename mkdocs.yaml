@@ -1,0 +1,9 @@
+site_name: 'Flask-MongoDB'
+site_description: 'A Flask extension for connecting to a MongoDB instance'
+
+nav:
+  - Home : 'index.md'
+  - 'Establishing A Connection':
+    - 'The MongoDB Class': mongo.md
+    - Models: collections.md
+  - API: api.md
