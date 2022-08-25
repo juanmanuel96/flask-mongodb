@@ -43,4 +43,28 @@ A field describes a key in a document. It has a BSON type, a required flag, allo
 
 There is a `Field` base class that all other field types inherit from. To create your own field type, you must inherit from this class and make sure the BSON type matches a MongoDB BSON type unless your field does not require it. A good example of a field type that does not require a BSON type is the `EnumField`. 
 
-Each field, has its unique carachteristics. Some inherit from other field types, but do some special task or modification that justify its existance. 
+Each field, has its unique carachteristics. Some inherit from other field types, but do some special task or modification that justify its existance. For example, the `PasswordField` inherits from `StringField`. It modifies a bit the `set_data` method to hash the data that represents a password. 
+
+Other characteristics are:
+
+1. `required`: Makes the field require truthy value, default is `True`
+2. `allow_null`: Permits data to be `None`, default is `False`
+3. `default`: A default value the field will have; can be a callable
+4. `clean_data_func`: A callable that will clean the data before it is returned
+
+For more field specifics, refer to the API section.
+
+### Adding a field to the model
+
+Now that fields have been explained, let's add a field to our model. Remember that at least one field is required for each model. To add a field, import the `fields` module from the `models` module.
+```python
+from flask_mongodb.models import CollectionModel, fields
+
+class BlogPost(CollectionModel):
+    collection_name = 'blog_post'
+    
+    title = fields.StringField(max_length=100)
+    body = fields.StringField(min_length=25, max_length=1000)
+```
+
+This is all that is required to create a model. Add this model package to the `MODELS` config variable to register the collection.
