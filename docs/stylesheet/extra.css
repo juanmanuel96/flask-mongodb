@@ -1,0 +1,19 @@
+.class_attr_list {
+    padding-left: 30px;
+}
+
+.params {
+    font-style: italic;
+}
+
+.py_class {
+    font-size: 16pt;
+    font-weight: bold;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.class_attr {
+    font-size: 14.5pt;
+    font-weight: bold;
+    font-family: 'Courier New', Courier, monospace;
+}

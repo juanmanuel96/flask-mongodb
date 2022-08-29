@@ -109,7 +109,3 @@ post_model = current_mongo.get_collection(BlogPost)
 ```
 
 This will return the instance of `BlogPost` model which was registered automatically. Through it you can make queries, create collection documents, updating documents, etc.
-
-## Making queries
-
-MongoDB querying system uses JSON to make DB queries. 

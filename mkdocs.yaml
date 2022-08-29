@@ -1,9 +1,22 @@
 site_name: 'Flask-MongoDB'
 site_description: 'A Flask extension for connecting to a MongoDB instance'
+repo_url: https://github.com/juanmanuel96/flask-mongodb
 
 nav:
   - Home : 'index.md'
-  - 'Establishing A Connection':
+  - Database Operations:
     - 'The MongoDB Class': mongo.md
     - Models: collections.md
-  - API: api.md
+  - Serializing Data: serializers.md
+  - API Reference: api.md
+
+# theme:
+#   name: readthedocs
+
+extra_css: 
+  - stylesheet/extra.css
+
+plugins:
+  - search
+  - mkdocs-versioning:
+      version: 1.5.0

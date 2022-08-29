@@ -52,7 +52,7 @@ Other characteristics are:
 3. `default`: A default value the field will have; can be a callable
 4. `clean_data_func`: A callable that will clean the data before it is returned
 
-For more field specifics, refer to the API section.
+For more field specifics, refer to the API Reference section.
 
 ### Adding a field to the model
 
@@ -68,3 +68,21 @@ class BlogPost(CollectionModel):
 ```
 
 This is all that is required to create a model. Add this model package to the `MODELS` config variable to register the collection.
+
+# Making queries
+
+MongoDB querying system uses JSON to make DB queries. Collection models come with a manager attribute which can run queries. The methods for running queries with the manager have the same name as the Collection instance from pymongo.
+
+## Collection Manager
+
+The `manager` attribute is an instance of the `CollectionManager` class. This class has a single attribute which is the model itself. The collection manager has the task of making every query to the database. As mentioned above, the manager implements the same querying as pymongo but modified to meet the requirements of Flask-MongoDB. The queries are:
+
+- `find`: Returns a document set of copies of the model with the corresponding document values
+- `find_one`: Returns a single model copy with the corresponding document values
+- `insert_one`: Inserts one single document into the collection
+- `update_one`: Updates only one document in the collection, default update type is `$set`
+- `delete_one`: Deletes a single document in the collection
+
+## Document Sets
+
+The `DocumentSet` class is a list like class where it contains copies of the model with the corresponding values from the collection documents. Only the `find` function of the manager returns a document set. 
