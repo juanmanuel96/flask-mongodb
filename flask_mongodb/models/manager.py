@@ -52,6 +52,7 @@ class CollectionManager(InimitableObject):
         ack = self._model.collection.delete_one(query, **options)
         return ack
     
-    def remove(self, **remove_data):
-        """Remove current document and all references"""
-        pass
+    # TODO: Disabled
+    # def remove(self, **remove_data):
+    #     """Remove current document and all references"""
+    #     pass

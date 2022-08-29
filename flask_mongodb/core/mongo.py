@@ -107,6 +107,7 @@ class MongoDB:
             raise DatabaseAliasException('Invalid collection name')
         return db
 
+    # TODO: Disabled
     # def __iter__(self):
     #     return iter(self.__collections.values()
 
@@ -153,11 +154,12 @@ class MongoDB:
         except KeyError:
             return default
     
-    def session(self, causal_consistency=None, default_transaction_options=None, 
-                snapshot=False, using='main'):
-        return self.connections[using].client.start_session(causal_consistency=causal_consistency, 
-                                                            default_transaction_options=default_transaction_options,
-                                                            snapshot=snapshot)
+    # TODO: Disabled
+    # def session(self, causal_consistency=None, default_transaction_options=None, 
+    #             snapshot=False, using='main'):
+    #     return self.connections[using].client.start_session(causal_consistency=causal_consistency, 
+    #                                                         default_transaction_options=default_transaction_options,
+    #                                                         snapshot=snapshot)
     
     def disconnect(self, using='main'):
         return self.connections[using].client.close()

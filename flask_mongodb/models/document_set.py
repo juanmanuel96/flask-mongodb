@@ -60,14 +60,15 @@ class DocumentSet(InimitableObject):
             self._set.append(m)
         return self
     
-    def sort(self, key_or_list=None, direction=None):
-        self._check_if_is_cursor()
-        self.cursor = self.cursor.sort(key_or_list=key_or_list, direction=direction)
-        if self._set:
-            # Clear the set before sorting
-            self._set.clear()
-        for doc in self.cursor:
-            m = deepcopy(self._model)
-            m.set_model_data(doc)
-            self._set.append(m)
-        return self
+    # TODO: Disabled
+    # def sort(self, key_or_list=None, direction=None):
+    #     self._check_if_is_cursor()
+    #     self.cursor = self.cursor.sort(key_or_list=key_or_list, direction=direction)
+    #     if self._set:
+    #         # Clear the set before sorting
+    #         self._set.clear()
+    #     for doc in self.cursor:
+    #         m = deepcopy(self._model)
+    #         m.set_model_data(doc)
+    #         self._set.append(m)
+    #     return self
