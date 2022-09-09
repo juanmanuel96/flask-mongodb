@@ -1,8 +1,9 @@
 import typing as t
 
 FINAL = 'FINAL'
-RELEASE_CANDIDATE = 'RC'
-VALID_STATES = [FINAL, 'ALPHA', 'BETA', RELEASE_CANDIDATE]
+RELEASE_CANDIDATE = 'RC',
+DEVELOPMENT = ('DEV', 'DEVELOPMENT')
+VALID_STATES = [FINAL, 'ALPHA', 'BETA', RELEASE_CANDIDATE, *DEVELOPMENT]
 
 
 def get_version(version_info: t.Tuple[int, int, int, str,  int]) -> str:
