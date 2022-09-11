@@ -17,7 +17,7 @@ def get_version(version_info: t.Tuple[int, int, int, str,  int]) -> str:
         raise Exception('Not a valid package state')
     if version_state.upper() == FINAL:
         return version
-    if RELEASE_CANDIDATE in version_state.upper():
+    if version_state.upper() == RELEASE_CANDIDATE:
         return version + f'-{version_state}'
     version += f'-{version_state}.{state_number}'
     return version
