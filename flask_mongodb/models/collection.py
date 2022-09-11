@@ -7,7 +7,7 @@ from flask_mongodb.core.wrappers import MongoCollection, MongoDatabase
 from flask_mongodb.models.fields import (EmbeddedDocumentField, EnumField,
                                          ObjectIdField, ReferenceIdField,
                                          StructuredArrayField)
-from flask_mongodb.models.manager import CollectionManager
+from flask_mongodb.models.manager import CollectionManager, ReferencenManager
 
 
 class BaseCollection:
@@ -33,6 +33,12 @@ class BaseCollection:
                 attr = getattr(self, name)
                 if hasattr(attr, '_model_field'):
                     self._fields[name] = attr
+                    if hasattr(attr, '_reference'):
+                        attr: ReferenceIdField
+                        name = attr.related_name
+                        if name is None:
+                            name = str(self) + '_related'
+                        setattr(attr.model, name, ReferencenManager(self))
 
     def __setitem__(self, __name: str, __value: t.Any):
         # Dict style assignment
@@ -48,6 +54,8 @@ class BaseCollection:
         field = self._fields.get(__name, None)
         if field is None:
             raise KeyError(f'Not a valid field with name {__name}')
+        if hasattr(field, '_reference'):
+            return field.reference
         return field.data
     
     def __str__(self):

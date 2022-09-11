@@ -5,7 +5,7 @@ from flask_mongodb.core.mixins import InimitableObject
 from flask_mongodb.models.document_set import DocumentSet
 
 
-class CollectionManager(InimitableObject):
+class BaseManager(InimitableObject):
     def __init__(self, model=None):
         self._model = model
     
@@ -52,7 +52,21 @@ class CollectionManager(InimitableObject):
         ack = self._model.collection.delete_one(query, **options)
         return ack
     
+    # Aliases
+    all = find
+    get = find_one
+    create = insert_one
+    update = update_one
+    delete = delete_one
+
+
+class CollectionManager(BaseManager):
     # TODO: Disabled
     # def remove(self, **remove_data):
     #     """Remove current document and all references"""
     #     pass
+    pass
+
+
+class ReferencenManager(BaseManager):
+    pass
