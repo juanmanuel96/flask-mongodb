@@ -1,5 +1,6 @@
 import typing as t
 from bson import ObjectId
+from flask_mongodb.core.exceptions import OperationNotAllowed
 
 from flask_mongodb.core.mixins import InimitableObject
 from flask_mongodb.models.document_set import DocumentSet
@@ -68,5 +69,15 @@ class CollectionManager(BaseManager):
     pass
 
 
-class ReferencenManager(BaseManager):
-    pass
+class ReferencenManager(BaseManager):    
+    def insert_one(self, insert_data, **options):
+        raise OperationNotAllowed()
+    
+    def insert_many(self, document_list: t.List[t.Dict], **options):
+        raise OperationNotAllowed()
+    
+    def update_one(self, query, update, update_type='', **options):
+        raise OperationNotAllowed()
+    
+    def delete_one(self, query, **options):
+        raise OperationNotAllowed()

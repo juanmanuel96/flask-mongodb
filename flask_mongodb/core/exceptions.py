@@ -86,3 +86,7 @@ class FieldError(BaseFlaskMongodbException):
 
 class CouldNotRegisterCollection(BaseFlaskMongodbException):
     default_message: str = 'Could not register collection'
+
+
+class OperationNotAllowed(BaseFlaskMongodbException):
+    default_message: str = 'This operation is not allowed'
