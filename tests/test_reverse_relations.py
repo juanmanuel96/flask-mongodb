@@ -1,7 +1,7 @@
 import pytest
-from flask import Flask
 
 from flask_mongodb.core.mongo import MongoDB
+from flask_mongodb.core import exceptions
 from flask_mongodb.models.fields import ReferenceIdField
 from tests.fixtures import BaseAppSetup
 from tests.model_for_tests.reference.models import CarCompany, CarModel
@@ -64,3 +64,28 @@ class TestReferenceAndReverseRelations(BaseAppSetup):
     def test_relation_finds_correct_data(self, car_company: CarCompany):
         car_model = car_company.car_models.find().first()
         assert car_model['car_model'] == 'Camaro'
+    
+    def test_insert_not_allowed(self, car_company: CarCompany):
+        with pytest.raises(exceptions.OperationNotAllowed):
+            car_company.car_models.insert_one({})
+    
+    def test_insert_many_not_allowed(self, car_company: CarCompany):
+        with pytest.raises(exceptions.OperationNotAllowed):
+            car_company.car_models.insert_many({})
+    
+    def test_update_one_not_allowed(self, car_company: CarCompany):
+        with pytest.raises(exceptions.OperationNotAllowed):
+            car_company.car_models.update_one({}, {})
+    
+    def test_delete_one_not_allowed(self, car_company: CarCompany):
+        with pytest.raises(exceptions.OperationNotAllowed):
+            car_company.car_models.delete_one({})
+    
+    def test_add_new_car_model(self, car_company: CarCompany, mongo: MongoDB):
+        total_company_models = car_company.car_models.all().count()  # Should be 1
+        car = mongo.get_collection(CarModel)
+        car.set_model_data({'company': car_company.pk, 'make': 'Chevrolet', 'car_model': 'Corvette',
+                              'color': 'red', 'year': 2022})
+        car.manager.insert_one(car.data(include_reference=False))
+        new_total = car_company.car_models.all().count()  # Should be 2
+        assert new_total > total_company_models
