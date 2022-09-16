@@ -11,6 +11,7 @@ from flask_mongodb.models.manager import CollectionManager, ReferencenManager
 
 
 class BaseCollection:
+    _is_model = True
     collection_name: str = None
     schemaless = False
     validation_level: str = 'strict'
@@ -35,10 +36,12 @@ class BaseCollection:
                     self._fields[name] = attr
                     if hasattr(attr, '_reference'):
                         attr: ReferenceIdField
-                        name = attr.related_name
-                        if name is None:
-                            name = str(self) + '_related'
-                        setattr(attr.model, name, ReferencenManager(self))
+                        related_name = attr.related_name
+                        if related_name is None:
+                            related_name = str(self) + '_related'
+                        setattr(attr.model, related_name, ReferencenManager(self, name))
+                        setattr(self, f'{name}_id', ObjectIdField())
+                        self._fields[f'{name}_id'] = getattr(self, f'{name}_id')
 
     def __setitem__(self, __name: str, __value: t.Any):
         # Dict style assignment
@@ -128,6 +131,8 @@ class CollectionModel(BaseCollection):
         if hasattr(__value, '_model_data'):
             raise ValueError('Cannot assign model field to this model field')
         field.data = __value
+        if hasattr(field, '_reference'):
+            self.fields[f'{__name}_id'].data = __value
         
         if __name not in self._update:
             self._update[__name] = __value
@@ -171,6 +176,11 @@ class CollectionModel(BaseCollection):
             }
         }
         for name, field in self.fields.items():
+            if isinstance(field, ReferenceIdField):
+                # If field is a ReferenceIdField, it will be ignored and it's counterpart [name]_id
+                # will be used
+                continue
+            
             if field.required:
                 validators["$jsonSchema"]["required"].append(name)
             
@@ -338,6 +348,15 @@ class CollectionModel(BaseCollection):
                 # Ignore fields that do not exist
                 continue
             field.data = value
+            if hasattr(field, '_reference') and field.data:
+                self[f'{name}_id'] = value
+        
+        # Check for reference fields
+        for name, field in self.fields.items():
+            if hasattr(field, '_reference'):
+                id_field_of_ref = self[name + '_id']
+                if str(field.data) != str(id_field_of_ref):
+                    field.data = id_field_of_ref
     
     def connect(self, database: MongoDatabase):
         self.schema_validators = self.__define_validators__() if not self.schemaless else None
