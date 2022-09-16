@@ -1,7 +1,8 @@
 import typing as t
 from bson import ObjectId
-from flask_mongodb.core.exceptions import OperationNotAllowed
+from pymongo.results import InsertOneResult
 
+from flask_mongodb.core.exceptions import OperationNotAllowed
 from flask_mongodb.core.mixins import InimitableObject
 from flask_mongodb.models.document_set import DocumentSet
 
@@ -10,34 +11,55 @@ class BaseManager(InimitableObject):
     def __init__(self, model=None):
         self._model = model
     
+    def _clean_filter(self, **filter_to_clean):
+        _filter = {}
+        for key, value in filter_to_clean.items():
+            if hasattr(value, '_is_model'):
+                _filter[f'{key}_id'] = value.pk
+            else:
+                if key in _filter:
+                    # Do not overwrite
+                    continue
+                _filter[key] = value
+        return _filter
+    
     # Read operations
     def find(self, **filter):
-        cursor = self._model.collection.find(filter)
+        _filter = self._clean_filter(**filter)
+        cursor = self._model.collection.find(_filter)
         docuset = DocumentSet(self._model, cursor=cursor)()
         return docuset
+    
+    def all(self):
+        return self.find()
     
     def find_one(self, **filter):
         if '_id' in filter and isinstance(filter['_id'], str):
             filter['_id'] = ObjectId(filter['_id'])
-        doc = self._model.collection.find_one(filter)
+        _filter = self._clean_filter(**filter)
+        doc = self._model.collection.find_one(_filter)
         if doc is None:
             return None
         model = DocumentSet(self._model, document=doc)()
         return model
     
-    # Create, Update, Delete (CUD) operations
-    def insert_many(self, document_list: t.List[t.Dict], **options):
-        assert isinstance(document_list, list)
-        assert all([isinstance(doc, dict) for doc in document_list])
-        # Cleaning doc list
-        clean_list = [(doc, doc.pop('_id', None))[0] for doc in document_list]
-        ack = self._model.collection.insert_many(clean_list, **options)
-        return ack
-    
-    def insert_one(self, insert_data, **options):
+    # Create, Update, Delete (CUD) operations    
+    def insert_one(self, insert_data, **options) -> InsertOneResult:
         assert isinstance(insert_data, dict)
+        
+        data = {}
+        
         insert_data.pop('_id', None)
-        ack = self._model.collection.insert_one(insert_data, **options)
+        for key in insert_data.keys():
+            attr = getattr(self._model, key, None)
+            if hasattr(attr, '_reference'):
+                data[f'{key}_id'] = attr.data
+            else:
+                if key in data:
+                    # Do not overwrite anything
+                    continue
+                data[key] = attr.data
+        ack = self._model.collection.insert_one(data, **options)
         return ack
     
     def update_one(self, query, update, update_type='$set', **options):
@@ -54,7 +76,6 @@ class BaseManager(InimitableObject):
         return ack
     
     # Aliases
-    all = find
     get = find_one
     create = insert_one
     update = update_one
@@ -67,7 +88,17 @@ class CollectionManager(BaseManager):
         pass
 
 
-class ReferencenManager(BaseManager):    
+class ReferencenManager(BaseManager):
+    def __init__(self, model=None, field_name: str = None):
+        super().__init__(model)
+        self.field_name = field_name
+    
+    def find(self, **filter):
+        return super().find(**filter)
+
+    def find_one(self, **filter):
+        return super().find_one(**filter)
+     
     def insert_one(self, insert_data, **options):
         raise OperationNotAllowed()
     
