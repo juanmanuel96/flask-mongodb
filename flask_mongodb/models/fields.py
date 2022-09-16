@@ -9,8 +9,11 @@ from werkzeug.security import generate_password_hash
 from flask_mongodb.core.exceptions import FieldError, InvalidChoice
 
 
-class Field:
+class FieldMixin:
     _model_field = True
+
+
+class Field(FieldMixin):
     bson_type: list = None
     _validator_description = None
 
