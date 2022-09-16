@@ -5,6 +5,7 @@ from pymongo.results import InsertOneResult
 from flask_mongodb.core.exceptions import OperationNotAllowed
 from flask_mongodb.core.mixins import InimitableObject
 from flask_mongodb.models.document_set import DocumentSet
+from flask_mongodb.models.fields import FieldMixin
 
 
 class BaseManager(InimitableObject):
@@ -90,12 +91,23 @@ class CollectionManager(BaseManager):
     pass
 
 
-class ReferencenManager(BaseManager):
+class ReferencenManager(BaseManager, FieldMixin):
+    _reference_manager = True
+    
     def __init__(self, model=None, field_name: str = None):
         super().__init__(model)
         self.field_name = field_name
+        self.reference_id = None
+    
+    def all(self):
+        _filter = {
+            self.field_name + '_id': self.reference_id
+        }
+        return super().find(**_filter)
     
     def find(self, **filter):
+        if self.field_name + '_id' not in filter:
+            filter[self.field_name + '_id'] = self.reference_id
         return super().find(**filter)
 
     def find_one(self, **filter):

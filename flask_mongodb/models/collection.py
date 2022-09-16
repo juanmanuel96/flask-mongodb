@@ -15,16 +15,16 @@ class BaseCollection:
     collection_name: str = None
     schemaless = False
     validation_level: str = 'strict'
-    manager = CollectionManager
+    manager_class = CollectionManager
     db_alias = 'main'
     _id = ObjectIdField()
     
     def __init__(self) -> None:
         self._fields = dict()
         self.__collection__: MongoCollection = None
-        if not self.manager:
-            raise ValueError('Missing collection manager')
-        setattr(self, 'manager', self.manager(self))
+        if not self.manager_class:
+            raise ValueError('Missing collection manager class')
+        self.manager = self.manager_class(self)
         setattr(self, '_id', self._id)
         setattr(self, 'db_alias', self.db_alias)
         self._fields['_id'] = self._id
@@ -46,11 +46,16 @@ class BaseCollection:
     def __setitem__(self, __name: str, __value: t.Any):
         # Dict style assignment
         field = self._fields.get(__name, None)
+        
         if field is None:
             raise KeyError(f'CollectionModel does not field with name {__name}')
         if hasattr(__value, '_model_data'):
             raise ValueError('Cannot assign model field to this model field')
+        
         field.data = __value
+        if hasattr(field, '_reference'):
+            self.fields[f'{__name}_id'].data = __value
+            
     
     def __getitem__(self, __name: str):
         # Dict style getting
@@ -60,6 +65,15 @@ class BaseCollection:
         if hasattr(field, '_reference'):
             return field.reference
         return field.data
+    
+    def __getattribute__(self, __name: str) -> t.Any:
+        attr = super().__getattribute__(__name)
+        if hasattr(attr, '_reference_manager'):
+            attr.reference_id = self['_id']
+        return attr 
+    
+    def __getattr__(self, __name):
+        return super().__getattr__(__name) 
     
     def __str__(self):
         return self.collection_name
@@ -87,86 +101,6 @@ class BaseCollection:
             setattr(obj, k, deepcopy(v, memo))
         return obj
     
-    @property
-    def fields(self) -> dict:
-        return self._fields
-    
-    @property
-    def pk(self):
-        return self._id.data
-
-
-class CollectionModel(BaseCollection):
-    def __init__(self, **field_values):
-        self._initial = {} if not field_values else field_values
-        self._update = {}
-        super(CollectionModel, self).__init__()
-        
-        if not self.collection_name:
-            raise CollectionException('Need to specify the collection_name')
-        
-        if not self.db_alias:
-            raise CollectionException('Need to the specify the db_alais')
-        
-        for name, field in self._fields.items():
-            # Make fields accessible by the dot convension and obscure class attribute
-            # names
-            setattr(self, name, field)
-        
-        if self._initial:
-            "Assign the respective field their data, even if the field does not exist"
-            for name, data in self._initial.items():
-                field = self._fields.get(name, None)
-                if field is None:
-                    # If field name not part of collection, ignore it
-                    continue
-                field.data = data
-        
-        self.schema_validators = None
-    
-    def __setitem__(self, __name: str, __value: t.Any):
-        field = self._fields.get(__name, None)
-        if field is None:
-            raise KeyError(f'CollectionModel does not field with name {__name}')
-        if hasattr(__value, '_model_data'):
-            raise ValueError('Cannot assign model field to this model field')
-        field.data = __value
-        if hasattr(field, '_reference'):
-            self.fields[f'{__name}_id'].data = __value
-        
-        if __name not in self._update:
-            self._update[__name] = __value
-        else:
-            if self._update[__name] != __value:
-                self._update[__name] = __value
-    
-    @property
-    def collection(self) -> t.Union[MongoCollection, None]:
-        return self.__collection__
-    
-    def data(self, as_str=False, exclude=(), include_reference=True, include_all_references=False):
-        _data = {}
-        for name, field in self.fields.items():
-            if name in exclude:
-                # Go to next field
-                continue
-            if isinstance(field, EmbeddedDocumentField):
-                _data[name] = {}
-                for prop_name, prop_field in field.properties.items():
-                    _data[name][prop_name] = prop_field.data if not as_str else str(prop_field.data)
-            elif isinstance(field, ReferenceIdField) and include_reference:
-                ref = field.reference
-                if ref is None:
-                    # CONSIDER: If best option is to raise and error
-                    _data[name] = ref
-                    continue  # Go to next field
-                _data[name] = field.reference.data(as_str, exclude, 
-                                                    include_reference=include_all_references,
-                                                    include_all_references=include_all_references)
-            else:
-                _data[name] = field.data if not as_str else str(field.data)
-        return _data
-
     def __define_validators__(self):
         validators = {
             '$jsonSchema': {
@@ -179,6 +113,10 @@ class CollectionModel(BaseCollection):
             if isinstance(field, ReferenceIdField):
                 # If field is a ReferenceIdField, it will be ignored and it's counterpart [name]_id
                 # will be used
+                continue
+            
+            if hasattr(field, '_reference_manager'):
+                # Do not consider reference managers
                 continue
             
             if field.required:
@@ -341,22 +279,14 @@ class CollectionModel(BaseCollection):
         field_properties.update(items=items)
         return field_properties
 
-    def __assign_data_to_fields__(self):
-        for name, field in self.fields.items():
-            value = self._initial.get(name)
-            if value is None:
-                # Ignore fields that do not exist
-                continue
-            field.data = value
-            if hasattr(field, '_reference') and field.data:
-                self[f'{name}_id'] = value
-        
-        # Check for reference fields
-        for name, field in self.fields.items():
-            if hasattr(field, '_reference'):
-                id_field_of_ref = self[name + '_id']
-                if str(field.data) != str(id_field_of_ref):
-                    field.data = id_field_of_ref
+    
+    @property
+    def fields(self) -> dict:
+        return self._fields
+    
+    @property
+    def pk(self):
+        return self._id.data
     
     def connect(self, database: MongoDatabase):
         self.schema_validators = self.__define_validators__() if not self.schemaless else None
@@ -369,6 +299,79 @@ class CollectionModel(BaseCollection):
         except OperationFailure as exc:
             # If collection exists, use that collection
             self.__collection__ = MongoCollection(database, self.collection_name)
+
+
+class CollectionModel(BaseCollection):
+    def __init__(self, **field_values):
+        self._initial = {} if not field_values else field_values
+        self._update = {}
+        super(CollectionModel, self).__init__()
+        
+        if not self.collection_name:
+            raise CollectionException('Need to specify the collection_name')
+        
+        if not self.db_alias:
+            raise CollectionException('Need to the specify the db_alais')
+        
+        for name, field in self._fields.items():
+            # Make fields accessible by the dot convension and obscure class attribute
+            # names
+            setattr(self, name, field)
+        
+        if self._initial:
+            "Assign the respective field their data, even if the field does not exist"
+            for name, data in self._initial.items():
+                field = self._fields.get(name, None)
+                if field is None:
+                    # If field name not part of collection, ignore it
+                    continue
+                field.data = data
+        
+        self.schema_validators = None
+    
+    @property
+    def collection(self) -> t.Union[MongoCollection, None]:
+        return self.__collection__
+    
+    def data(self, as_str=False, exclude=(), include_reference=True, include_all_references=False):
+        _data = {}
+        for name, field in self.fields.items():
+            if name in exclude:
+                # Go to next field
+                continue
+            if isinstance(field, EmbeddedDocumentField):
+                _data[name] = {}
+                for prop_name, prop_field in field.properties.items():
+                    _data[name][prop_name] = prop_field.data if not as_str else str(prop_field.data)
+            elif isinstance(field, ReferenceIdField) and include_reference:
+                ref = field.reference
+                if ref is None:
+                    # CONSIDER: If best option is to raise and error
+                    _data[name] = ref
+                    continue  # Go to next field
+                _data[name] = field.reference.data(as_str, exclude, 
+                                                    include_reference=include_all_references,
+                                                    include_all_references=include_all_references)
+            else:
+                _data[name] = field.data if not as_str else str(field.data)
+        return _data
+    
+    def __assign_data_to_fields__(self):
+        for name in self.fields.keys():
+            value = self._initial.get(name)
+            if value is None:
+                # Ignore fields that do not exist
+                continue
+            self[name] = value
+            if hasattr(self.fields[name], '_reference') and field.data:
+                self[f'{name}_id'] = value
+        
+        # Check for reference fields
+        for name, field in self.fields.items():
+            if hasattr(field, '_reference'):
+                id_field_of_ref = self[name + '_id']
+                if str(field.data) != str(id_field_of_ref):
+                    field.data = id_field_of_ref
     
     def set_model_data(self, data: dict):
         self._initial = data
