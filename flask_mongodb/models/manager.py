@@ -12,7 +12,7 @@ class BaseManager(InimitableObject):
     def __init__(self, model=None):
         self._model = model
     
-    def _clean_filter(self, **q):
+    def _clean_query(self, **q):
         _filter = {}
         for key, value in q.items():
             if hasattr(value, '_is_model'):
@@ -26,7 +26,7 @@ class BaseManager(InimitableObject):
     
     # Read operations
     def find(self, **filter):
-        _filter = self._clean_filter(**filter)
+        _filter = self._clean_query(**filter)
         cursor = self._model.collection.find(_filter)
         docuset = DocumentSet(self._model, cursor=cursor)()
         return docuset
@@ -37,7 +37,7 @@ class BaseManager(InimitableObject):
     def find_one(self, **filter):
         if '_id' in filter and isinstance(filter['_id'], str):
             filter['_id'] = ObjectId(filter['_id'])
-        _filter = self._clean_filter(**filter)
+        _filter = self._clean_query(**filter)
         doc = self._model.collection.find_one(_filter)
         if doc is None:
             return None
@@ -66,6 +66,8 @@ class BaseManager(InimitableObject):
     def update_one(self, query, update, update_type='$set', **options) -> UpdateResult:
         assert isinstance(query, dict)
         assert isinstance(update, dict)
+        query = self._clean_query(**query)
+        update = self._clean_query(**update)
         update = {update_type: update}
         ack = self._model.collection.update_one(query, update, **options)
         return ack
@@ -73,14 +75,14 @@ class BaseManager(InimitableObject):
     def delete_one(self, query, **options) -> DeleteResult:
         """Remove one and only one document"""
         assert isinstance(query, dict)
-        q = self._clean_filter(**query)
+        q = self._clean_query(**query)
         ack = self._model.collection.delete_one(q, **options)
         return ack
     
     def delete_many(self, query, **options) -> DeleteResult:
         """Delete all records that match the query"""
         assert isinstance(query, dict)
-        q = self._clean_filter(**query)
+        q = self._clean_query(**query)
         ack = self._model.collection.delete_many(q, **options)
         return ack
     
@@ -116,6 +118,8 @@ class ReferencenManager(BaseManager, FieldMixin):
         return super().find(**filter)
 
     def find_one(self, **filter):
+        if self.field_name + '_id' not in filter:
+            filter[self.field_name + '_id'] = self.reference_id
         return super().find_one(**filter)
      
     def insert_one(self, insert_data, **options):
@@ -125,4 +129,10 @@ class ReferencenManager(BaseManager, FieldMixin):
         raise OperationNotAllowed()
     
     def update_one(self, query, update, update_type='', **options):
+        raise OperationNotAllowed()
+    
+    def delete_one(self, query, **options) -> DeleteResult:
+        raise OperationNotAllowed()
+    
+    def delete_many(self, query, **options) -> DeleteResult:
         raise OperationNotAllowed()

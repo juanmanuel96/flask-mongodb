@@ -24,7 +24,7 @@ class BaseCollection:
         self.__collection__: MongoCollection = None
         if not self.manager_class:
             raise ValueError('Missing collection manager class')
-        self.manager = self.manager_class(self)
+        self._manager = self.manager_class(self)
         setattr(self, '_id', self._id)
         setattr(self, 'db_alias', self.db_alias)
         self._fields['_id'] = self._id
@@ -279,6 +279,9 @@ class BaseCollection:
         field_properties.update(items=items)
         return field_properties
 
+    @property
+    def manager(self) -> CollectionManager:
+        return self._manager
     
     @property
     def fields(self) -> dict:
