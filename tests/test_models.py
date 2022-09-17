@@ -6,39 +6,13 @@ from flask_mongodb import MongoDB, exceptions
 from flask_mongodb.core.wrappers import MongoConnect
 from flask_mongodb.models import CollectionModel
 from flask_mongodb.models.document_set import DocumentSet
+from tests.fixtures import BaseAppSetup
 
 from tests.model_for_tests.core.models import ModelForTest, ModelForTest2
-from tests.utils import DB_NAME, MAIN, remove_collections
+from tests.utils import MAIN, remove_collections
 
 
-class TestCollectionModels:
-    APP_CONFIG = {
-        'TESTING': True,
-        'DATABASE': {
-            MAIN: {
-                'HOST': 'localhost',
-                'PORT': 27017,
-                'NAME': DB_NAME
-            }
-        }
-    }
-
-    @pytest.fixture(scope='class', autouse=True)
-    def application(self):
-        _app = Flask(__name__)
-        _app.config.update(self.APP_CONFIG)
-        _mongo = MongoDB(_app)
-        
-        yield _app
-        
-        client: MongoConnect = _mongo.connections[MAIN].client
-        client.drop_database('flask_mongodb')
-        client.close()
-    
-    @pytest.fixture(scope='class')
-    def mongo(self, application: Flask):
-        return application.mongo
-    
+class TestCollectionModels(BaseAppSetup):
     def test_auto_model_registration(self, application: Flask):
         application.config.update({'MODELS': ['tests.model_for_tests.core']})
         mongo = MongoDB(application)
@@ -105,3 +79,24 @@ class TestCollectionModels:
         
         with pytest.raises(exceptions.CollectionException):
             mongo.register_collection(UnnamedCollection)
+    
+    def test_update(self, mongo: MongoDB):
+        model1 = mongo.get_collection(ModelForTest)
+        model1['sample_text'] = 'sample text changed'
+        ack = model1.manager.update_one(query={'_id': model1.pk}, update=model1.data(include_reference=False))
+        
+        assert ack.acknowledged
+    
+    def test_delete(self, mongo: MongoDB):
+        model2 = mongo.get_collection(ModelForTest2)
+        model2.set_model_data({
+            'title': 'title',
+            'body': 'This is the body of the article'
+        })
+        model2.manager.insert_one(model2.data(include_reference=False))
+        
+        # Now fetch the new data
+        same_model = model2.manager.find().first()
+        ack = model2.manager.delete_one(query={'_id':same_model.pk})
+        
+        assert ack.acknowledged
