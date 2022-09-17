@@ -1,6 +1,6 @@
 import typing as t
 from bson import ObjectId
-from pymongo.results import InsertOneResult
+from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 
 from flask_mongodb.core.exceptions import OperationNotAllowed
 from flask_mongodb.core.mixins import InimitableObject
@@ -12,9 +12,9 @@ class BaseManager(InimitableObject):
     def __init__(self, model=None):
         self._model = model
     
-    def _clean_filter(self, **filter_to_clean):
+    def _clean_filter(self, **q):
         _filter = {}
-        for key, value in filter_to_clean.items():
+        for key, value in q.items():
             if hasattr(value, '_is_model'):
                 _filter[f'{key}_id'] = value.pk
             else:
@@ -63,17 +63,25 @@ class BaseManager(InimitableObject):
         ack = self._model.collection.insert_one(data, **options)
         return ack
     
-    def update_one(self, query, update, update_type='$set', **options):
+    def update_one(self, query, update, update_type='$set', **options) -> UpdateResult:
         assert isinstance(query, dict)
         assert isinstance(update, dict)
         update = {update_type: update}
         ack = self._model.collection.update_one(query, update, **options)
         return ack
     
-    def delete_one(self, query, **options):
+    def delete_one(self, query, **options) -> DeleteResult:
         """Remove one and only one document"""
         assert isinstance(query, dict)
-        ack = self._model.collection.delete_one(query, **options)
+        q = self._clean_filter(**query)
+        ack = self._model.collection.delete_one(q, **options)
+        return ack
+    
+    def delete_many(self, query, **options) -> DeleteResult:
+        """Delete all records that match the query"""
+        assert isinstance(query, dict)
+        q = self._clean_filter(**query)
+        ack = self._model.collection.delete_many(q, **options)
         return ack
     
     # Aliases
@@ -81,13 +89,10 @@ class BaseManager(InimitableObject):
     create = insert_one
     update = update_one
     delete = delete_one
+    delete_all = delete_many
 
 
 class CollectionManager(BaseManager):
-    # TODO: Disabled
-    # def remove(self, **remove_data):
-    #     """Remove current document and all references"""
-    #     pass
     pass
 
 
@@ -120,7 +125,4 @@ class ReferencenManager(BaseManager, FieldMixin):
         raise OperationNotAllowed()
     
     def update_one(self, query, update, update_type='', **options):
-        raise OperationNotAllowed()
-    
-    def delete_one(self, query, **options):
         raise OperationNotAllowed()
