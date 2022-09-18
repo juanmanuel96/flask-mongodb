@@ -12,14 +12,6 @@ class TestReferenceAndReverseRelations(TestReferencesSetUp):
     MODELS = ['tests.model_for_tests.reference']
     
     # TESTS
-    def test_reference(self, car_model: CarModel):
-        company = car_model['company']
-        assert isinstance(company, CarCompany)
-    
-    def test_reference_field(self, car_model: CarModel):
-        company = car_model.company
-        assert isinstance(company, ReferenceIdField)
-    
     def test_models_relation_attribute(self, car_company: CarCompany):
         assert hasattr(car_company,  CarModel.company.related_name)
     

@@ -1,4 +1,5 @@
 from flask_mongodb import MongoDB
+from flask_mongodb.models.fields import ReferenceIdField
 from tests.model_for_tests.reference.models import CarCompany, CarModel
 from tests.test_references.base_setup import TestReferencesSetUp
 
@@ -6,7 +7,15 @@ from tests.test_references.base_setup import TestReferencesSetUp
 class TestReferenceField(TestReferencesSetUp):
     MODELS = ['tests.model_for_tests.reference']
     
-    #tests
+    # Tests
+    def test_reference(self, car_model: CarModel):
+        company = car_model['company']
+        assert isinstance(company, CarCompany)
+    
+    def test_reference_field(self, car_model: CarModel):
+        company = car_model.company
+        assert isinstance(company, ReferenceIdField)
+    
     def test_create_car_compnay_and_car_model(self, mongo: MongoDB):
         car_company = mongo.get_collection(CarCompany)
         car_company.set_model_data({
