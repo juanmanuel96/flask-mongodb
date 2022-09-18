@@ -366,7 +366,7 @@ class CollectionModel(BaseCollection):
                 # Ignore fields that do not exist
                 continue
             self[name] = value
-            if hasattr(self.fields[name], '_reference') and field.data:
+            if hasattr(self.fields[name], '_reference') and self.fields[name].data:
                 self[f'{name}_id'] = value
         
         # Check for reference fields
