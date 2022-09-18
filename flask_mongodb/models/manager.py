@@ -5,7 +5,6 @@ from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 from flask_mongodb.core.exceptions import OperationNotAllowed
 from flask_mongodb.core.mixins import InimitableObject
 from flask_mongodb.models.document_set import DocumentSet
-from flask_mongodb.models.fields import FieldMixin
 
 
 class BaseManager(InimitableObject):
@@ -98,7 +97,7 @@ class CollectionManager(BaseManager):
     pass
 
 
-class ReferencenManager(BaseManager, FieldMixin):
+class ReferencenManager(BaseManager):
     _reference_manager = True
     
     def __init__(self, model=None, field_name: str = None):
