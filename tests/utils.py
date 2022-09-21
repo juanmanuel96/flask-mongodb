@@ -3,7 +3,7 @@ from flask_mongodb import MongoDB
 MAIN = 'main'
 DB_NAME = 'flask_mongodb'
 
-def remove_collections(mongo: MongoDB):
-    collections = list(mongo.collections[MAIN].keys())
+def remove_collections(mongo: MongoDB, using=MAIN):
+    collections = list(mongo.collections[using].keys())
     for col in collections:
-        mongo.connections[MAIN].drop_collection(col)
+        mongo.connections[using].drop_collection(col)

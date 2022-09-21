@@ -16,9 +16,12 @@ class BaseAppSetup:
             }
         }
     }
+    MODELS = []
     
     @pytest.fixture(scope='class', autouse=True)
     def application(self):
+        if self.MODELS:
+            self.APP_CONFIG.update(MODELS=self.MODELS)
         _app = Flask(__name__)
         _app.config.update(self.APP_CONFIG)
         _mongo = MongoDB(_app)
