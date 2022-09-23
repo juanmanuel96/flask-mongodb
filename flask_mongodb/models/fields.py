@@ -9,8 +9,11 @@ from werkzeug.security import generate_password_hash
 from flask_mongodb.core.exceptions import FieldError, InvalidChoice
 
 
-class Field:
+class FieldMixin:
     _model_field = True
+
+
+class Field(FieldMixin):
     bson_type: list = None
     _validator_description = None
 
@@ -367,13 +370,13 @@ class EnumField(Field):
 
 class ReferenceIdField(Field):
     _reference = True
-    bson_type = ["objectId"]
+    bson_type = None
     _validator_description = 'Must be an objectId type'
     
     def __init__(self, model, required: bool = True, allow_null=False, default=None, 
-                 clean_data_func=None, related_name='related', **kwargs) -> None:
+                 clean_data_func=None, related_name=None, **kwargs) -> None:
         super().__init__(required, allow_null, default, clean_data_func, **kwargs)
-        self.related_name = related_name
+        self.related_name = related_name if related_name else 'related'
         self.model = model
     
     def validate_data(self, value):
