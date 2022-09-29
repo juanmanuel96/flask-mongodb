@@ -7,7 +7,7 @@ from .db_shifts import shift
 from .utils import echo
 
 
-@click.group('flask-mongodb', help=f"The Flask MongoDB CLI tool. Version: v{MongoDB.version}")
+@click.group('flask-mongodb', help=f"The FlaskMongoDB CLI tool")
 def cli(version):
     pass
 
@@ -28,11 +28,11 @@ version_options = click.Option(
 )
 
 
-@cli.command('create-model')
+@cli.command('create-model', help='Create a model for your application')
 @click.option('--path', default='.', help='Path for the model file')
 @click.option('--package', default=None, help='Place model in package')
 def create_model(path, package):
-    click.echo('Creating model...')
+    echo('Creating model...')
     
     base_path = os.path.abspath(os.getcwd())
     if path != '.':
