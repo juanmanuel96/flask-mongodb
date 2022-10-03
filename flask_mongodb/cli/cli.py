@@ -3,7 +3,7 @@ import os
 import click
 
 from flask_mongodb.core.mongo import MongoDB
-from .db_shifts import shift
+from .db_shifts import db_shift
 from .utils import echo
 
 
@@ -57,9 +57,12 @@ def create_model(path, package):
     echo(path)
 
 
-cli.add_command(shift)
+cli.add_command(db_shift)
+
+def main():
+    cli.params.append(version_options)
+    cli()
 
 
 if __name__ == '__main__':
-    cli.params.append(version_options)
-    cli()
+    main()
