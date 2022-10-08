@@ -271,6 +271,8 @@ class EmbeddedDocumentField(Field):
                 raise TypeError('Property names can only be of type string')
             if not issubclass(type(prop), Field):
                 raise TypeError("Property must be a subclass of Field")
+            if hasattr(prop, '_reference'):
+                raise TypeError('Embedded field properties cannot have reference fields')
             json_field_properties[prop_name] = prop
 
         return json_field_properties
