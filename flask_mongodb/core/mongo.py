@@ -71,6 +71,7 @@ class MongoDB:
         app.config.setdefault('MODELS', [])
     
     def _automatic_model_registration(self, app: Flask):
+        """Deprecated: This method will be removed as of version 2"""
         if not app.config['MODELS']:
             return None
         models_list = []
@@ -109,12 +110,10 @@ class MongoDB:
             raise DatabaseAliasException('Invalid collection name')
         return db
 
-    # TODO: Disabled
-    # def __iter__(self):
-    #     return iter(self.__collections.values()
-
     def register_collection(self, collection_cls: t.Type[CollectionModel]):
         """
+        Deprecated: This method will be removed as of version 2
+        
         Collection is a user-defined collection that will be added to the MongoFlask instance
         """
         if issubclass(collection_cls, CollectionModel):
@@ -123,6 +122,7 @@ class MongoDB:
             raise InvalidClass('Invalid class type')
 
     def __register_collection(self, collection_cls: t.Type[CollectionModel]):
+        """Deprecated: This method will be removed as of version 2"""
         _name = collection_cls.collection_name
         success = self._insert_collection(_name, collection_cls)
         if not success:
@@ -131,6 +131,8 @@ class MongoDB:
 
     def _insert_collection(self, name, collection_cls: t.Type[CollectionModel]) -> bool:
         """
+        Deprecated: This method will be removed as of version 2
+        
         Inserts a new collection into the collections attribute.
         """
         _collection = collection_cls()
