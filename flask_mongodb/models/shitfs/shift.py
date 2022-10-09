@@ -1,6 +1,5 @@
 import typing as t
 
-from flask_mongodb import current_mongo
 from flask_mongodb.core.exceptions import CollectionHasNoData
 from flask_mongodb.models.fields import (ArrayField, BooleanField, DatetimeField, StringField, IntegerField, FloatField, 
                                          EmbeddedDocumentField, ObjectIdField)
@@ -22,6 +21,8 @@ MONGODB_BSON_TYPE_MAP = {
 
 class Shift:
     def __init__(self, model: t.Type[CollectionModel]) -> None:
+        from flask_mongodb import current_mongo
+        
         self._model = model
         self.collection_schema = None
         self.database = current_mongo.connections[self._model.db_alias]

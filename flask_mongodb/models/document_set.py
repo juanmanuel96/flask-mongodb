@@ -32,14 +32,20 @@ class DocumentSet(InimitableObject):
     def __next__(self):
         return next(self._set)
     
+    def __len__(self):
+        return len(self._set)
+    
     def _check_if_is_cursor(self, msg=None):
         message = msg if msg else 'Cannot call method of DocumentSet without a cursor'
         if not self.cursor:
             raise ValueError(message)
     
     def first(self):
-        self._check_if_is_cursor()
-        return self._set[0]
+        try:
+            self._check_if_is_cursor()
+            return self._set[0]
+        except KeyError:
+            return None
     
     def last(self):
         self._check_if_is_cursor()
