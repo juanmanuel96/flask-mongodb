@@ -9,6 +9,7 @@ from flask_mongodb.core.exceptions import (CollectionInvalid, CouldNotRegisterCo
                                            URIMissing)
 from flask_mongodb.core.wrappers import MongoConnect, MongoDatabase
 from flask_mongodb.models import CollectionModel
+from flask_mongodb.models.shitfs.hisotry import create_db_shift_hisotry
 
 
 class MongoDB:
@@ -55,9 +56,15 @@ class MongoDB:
             db.alias = db_alias
             self.__connections[db_alias] = db
         
-        self._automatic_model_registration(app)
+        self._set_collections(app)
         
         app.mongo = self
+    
+    def __getitem__(self, arg) -> t.Union[t.Type[MongoDatabase], None]:
+        db = self.__connections.get(arg)
+        if db is None:
+            raise DatabaseAliasException('Invalid database name')
+        return db
     
     def _set_default_configurations(self, app: Flask):
         db = {
@@ -70,7 +77,22 @@ class MongoDB:
         app.config.setdefault('DATABASE', db)
         app.config.setdefault('MODELS', [])
     
+    def _get_model_list(self, app: Flask) -> list:
+        if not app.config['MODELS']:
+            return None
+        models_list = []
+        
+        # Prepare a list of modules with their models
+        for mod in app.config['MODELS']:
+            mod = mod + '.models'
+            models = import_string(mod)
+            models_list.append(models)
+        return models_list
+    
     def _automatic_model_registration(self, app: Flask):
+        """
+        DEPRECATED: This method will be removed as of version 2
+        """
         if not app.config['MODELS']:
             return None
         models_list = []
@@ -94,6 +116,51 @@ class MongoDB:
                         # When the collection name is None, it is the base model class
                         continue
                     self.__register_collection(obj)
+    
+    def _set_collections(self, app: Flask):
+        models = self._get_model_list(app)
+        for m in models:
+            module_contents = dir(m)  # Get contents of the module
+            for cont in module_contents:
+                obj: t.Union[t.Type[CollectionModel], t.Any] = getattr(m, cont)  # Get each object
+                
+                # Register the obj as a collection if it has the collection_name
+                # and db_alias attributes which all models should have
+                if hasattr(obj, 'collection_name') and hasattr(obj, 'db_alias'):
+                    if obj.collection_name is None:
+                        # When the collection name is None, it is the base model class
+                        continue
+                    _name = obj.collection_name
+                    # _instance = obj()
+                    if obj.db_alias not in self.__collections:
+                        self.__collections[obj.db_alias] = {}
+                    self.__collections[obj.db_alias].update({_name: obj})
+        
+        # Now add the history model
+        for db in self.connections.keys():
+            self.__collections[db].update(shift_history=create_db_shift_hisotry(db))
+    
+    def __register_collection(self, collection_cls: t.Type[CollectionModel]):
+        """
+        DEPRECATED: This method will be removed as of version 2
+        """
+        _name = collection_cls.collection_name
+        success = self._insert_collection(_name, collection_cls)
+        if not success:
+            raise CouldNotRegisterCollection('Not success')
+        return success
+    
+    def _insert_collection(self, name, collection_cls: t.Type[CollectionModel]) -> bool:
+        """
+        DEPRECATED: This method will be removed as of version 2
+        
+        Inserts a new collection into the collections attribute.
+        """
+        _collection = collection_cls()
+        if _collection.db_alias not in self.__collections:
+            self.__collections[_collection.db_alias] = {}
+        self.__collections[_collection.db_alias].update({name: _collection})
+        return True
 
     @property
     def collections(self):
@@ -103,45 +170,24 @@ class MongoDB:
     def connections(self):
         return self.__connections
     
-    def __getitem__(self, arg) -> t.Union[t.Type[MongoDatabase], None]:
-        db = self.__connections.get(arg)
-        if db is None:
-            raise DatabaseAliasException('Invalid collection name')
-        return db
-
-    # TODO: Disabled
-    # def __iter__(self):
-    #     return iter(self.__collections.values()
+    def register_models(self):
+        from flask import current_app
+        self._automatic_model_registration(current_app)
 
     def register_collection(self, collection_cls: t.Type[CollectionModel]):
         """
+        DEPRECATED: This method will be removed as of version 2
+        
         Collection is a user-defined collection that will be added to the MongoFlask instance
         """
         if issubclass(collection_cls, CollectionModel):
             return self.__register_collection(collection_cls)
         else:
             raise InvalidClass('Invalid class type')
-
-    def __register_collection(self, collection_cls: t.Type[CollectionModel]):
-        _name = collection_cls.collection_name
-        success = self._insert_collection(_name, collection_cls)
-        if not success:
-            raise CouldNotRegisterCollection('Not success')
-        return success
-
-    def _insert_collection(self, name, collection_cls: t.Type[CollectionModel]) -> bool:
-        """
-        Inserts a new collection into the collections attribute.
-        """
-        _collection = collection_cls()
-        _collection.connect(self.connections[_collection.db_alias])
-        if _collection.db_alias not in self.__collections:
-            self.__collections[_collection.db_alias] = {}
-        self.__collections[_collection.db_alias].update({name: _collection})
-        return True
     
     def get_collection(self, collection: t.Type[CollectionModel], default=None):
         """
+        DEPRECATED: This method will be removed as of version 2
         Retrieves a Collection instance from the collections attribute.
 
         :param collection_name: Name of the collection to be retrieved
