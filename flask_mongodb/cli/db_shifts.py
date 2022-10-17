@@ -3,7 +3,7 @@ import click
 import flask.cli
 
 from flask_mongodb.models.shitfs import Shift, create_db_shift_hisotry
-from .utils import echo
+from .utils import create_collection, echo, start_database
 
 
 @click.group('shift', help='Shift the database to make changes')
@@ -16,15 +16,15 @@ def db_shift():
 @flask.cli.with_appcontext
 def show_shifts(database):
     from flask_mongodb import current_mongo
-    ShiftHistory = create_db_shift_hisotry(database)
-    
-    history = current_mongo.get_collection(ShiftHistory)
+    ShiftHistory = current_mongo.collections[database]['shift_history']
+    history = ShiftHistory()
     data = history.manager.all()
+    
     if len(data) < 1:
         echo('No history yet, execute the run command to make a history')
     else:
         for d in data:
-            echo(f'{d.shifted.data} {d.collection.data}')
+            echo(f'{d.db_collection.data} {d.shifted.data}')
 
 
 @db_shift.command('examine', help="Determine if must run a shift")
@@ -35,6 +35,7 @@ def examine(database, collection):
     from flask_mongodb import current_mongo
     
     models = current_mongo.collections[database]
+    models.pop('shift_history', None)
     exmination = {}
     
     if collection:
@@ -64,11 +65,27 @@ def run(database, collection):
     
     models = current_mongo.collections[database]
     
+    shift_history = models.pop('shift_history')()
+    
+    if collection:
+        models = {collection: models[collection]}
+    
+    for m in models.values():
+        shift = Shift(m)
+        shift.shift()
+        shift_history.set_model_data(data={
+            'db_collection': m.collection_name,
+            'new_fields': shift.should_shift['new_fields'] or None,
+            'removed_fields': shift.should_shift['removed_fields'] or None,
+            'altered_fields': shift.should_shift['altered_fields'] or None
+        })
+        shift_history.manager.insert_one(shift_history.data(include_reference=False))
+    
     echo('Done shifting')
 
 
 @db_shift.command('start-db', help='Create new DB collections')
-@click.option('--all', '-a', is_flag=True, 
+@click.option('--all', '-a', is_flag=True,
               help='Run in all databases, disables the database and path options')
 @click.option('--database', '-d', default='main', help='Specify database')
 @click.option('--path', '-p', help='Model path with dot notation')
@@ -79,11 +96,11 @@ def start(all, database: str, path: str):
     
     if all:
         database, path = None, None
-        current_mongo._automatic_model_registration(current_app)
+        start_database(current_mongo, current_app)
         
         for db_name in current_mongo.connections.keys():
             HistoryModel = create_db_shift_hisotry(db_name)
-            current_mongo.register_collection(HistoryModel)
+            create_collection(current_mongo, HistoryModel)
     else:
         # Check database is in the configurations
         if database not in current_app.config['DATABASE'].keys():
@@ -94,16 +111,6 @@ def start(all, database: str, path: str):
             current_app.config['MODELS'].clear()
             current_app.config['MODELS'].append(path)
             
-        current_mongo._automatic_model_registration(current_app)
-        
-        if path:
-            coll = path.split('.')[-1]
-            if 'shift_history' not in current_mongo.collections[database][coll]:
-            # Register DB shift history collection
-                HistoryModel = create_db_shift_hisotry(database)
-                current_mongo.register_collection(HistoryModel)
-        else:
-            for db_name in current_mongo.connections.keys():
-                if 'shift_history' not in current_mongo.collections[db_name].keys():
-                    HistoryModel = create_db_shift_hisotry(db_name)
-                    current_mongo.register_collection(HistoryModel)
+        start_database(current_mongo, current_app, database)
+        HistoryModel = create_db_shift_hisotry(database)
+        create_collection(current_mongo, HistoryModel)
