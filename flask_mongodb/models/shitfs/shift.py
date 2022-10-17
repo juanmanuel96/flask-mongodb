@@ -1,7 +1,8 @@
 import typing as t
 
 from flask_mongodb.core.exceptions import CollectionHasNoData
-from flask_mongodb.models.fields import (ArrayField, BooleanField, DatetimeField, StringField, IntegerField, FloatField, 
+from flask_mongodb.core.wrappers import MongoDatabase
+from flask_mongodb.models.fields import (ArrayField, BooleanField, DatetimeField, Field, StringField, IntegerField, FloatField, 
                                          EmbeddedDocumentField, ObjectIdField)
 from ..collection import CollectionModel
 
@@ -21,58 +22,34 @@ MONGODB_BSON_TYPE_MAP = {
 
 class Shift:
     def __init__(self, model: t.Type[CollectionModel]) -> None:
-        from flask_mongodb import current_mongo
-        
         self._model = model
         self.collection_schema = None
-        self.database = current_mongo.connections[self._model.db_alias]
-        self.collection = self.database.get_collection(self._model.collection_name)
         self.should_shift = {
             'altered_fields': [],
             'new_fields': [],
             'removed_fields': []
         }
     
+    def _get_database(self) -> MongoDatabase:
+        from flask_mongodb import current_mongo
+        database = current_mongo.connections[self._model.db_alias]
+        return database
+    
+    def _get_collection(self, database: MongoDatabase):
+        collection = database.get_collection(self._model.collection_name)
+        return collection
+    
     def _get_collection_schema(self):
-        collection_options = self.collection.options()
+        db = self._get_database()
+        collection = self._get_collection(db)
+        collection_options = collection.options()
         if collection_options:
             return collection_options['validator']
         else:
             return None
     
     def _get_model_schema(self):
-        return self._model.__define_validators__()
-    
-    def _compare_schemas(self, left: dict, right: dict):
-        change = False
-        for k in left:
-            if change:
-                break  # A change was detected, end loop
-            if k in right:
-                if isinstance(left[k], dict):
-                    change = self._compare_schemas(left[k], right[k])
-                else:
-                    change = left[k] == right[k]
-            else:
-                change = True
-                break  # Detected a change, break the loop
-        return change
-    
-    def get_collection_data(self):
-        collection_data = self.collection.find()
-        return collection_data
-    
-    def verify(self):
-        """Only applies to models with a schema"""
-        collection_schema = self._get_collection_schema()
-        old_data: dict = list(self.get_collection_data())
-        if not old_data:
-            raise CollectionHasNoData('No data in collection')
-        old_data = old_data[0]
-        schema_properties = collection_schema['$jsonSchema']['properties']
-        
-        self._compare_model_to_collection(schema_properties, self._model.fields, old_data)
-        self._compare_collection_to_model(self._model.fields, old_data)
+        return self._model().get_collection_schema()
     
     def _compare_model_to_collection(self, schema_properties: dict, model_fields: dict, 
                                      collection_data: dict, field_path=''):
@@ -142,6 +119,25 @@ class Shift:
                         inner_field = model_fields[name].properties
                         self._compare_collection_to_model(inner_field, data, _path)
     
+    
+    def get_collection_data(self):
+        db = self._get_database()
+        collection = self._get_collection(db)
+        collection_data = collection.find()
+        return collection_data
+    
+    def verify(self):
+        """Only applies to models with a schema"""
+        collection_schema = self._get_collection_schema()
+        old_data: dict = list(self.get_collection_data())
+        if not old_data:
+            raise CollectionHasNoData('No data in collection')
+        old_data = old_data[0]
+        schema_properties = collection_schema['$jsonSchema']['properties']
+        
+        self._compare_model_to_collection(schema_properties, self._model.fields, old_data)
+        self._compare_collection_to_model(self._model.fields, old_data)
+    
     def examine(self):
         if self._model.schemaless:
             return False
@@ -153,9 +149,61 @@ class Shift:
             # TODO: Properly manage cases where a collection without data was
             # already created but a shifting is intended
             return False
-        return any([len(f) > 0 for f in self.should_shift.values()])
+        return any([True if f else False for f in self.should_shift.values()])
     
     def shift(self):
+        def _find_embedded_property_default(embedded_field: EmbeddedDocumentField, property_path: list):
+            prop_name = property_path.pop()
+            doc_property: t.Type[Field] = embedded_field[prop_name]
+            if isinstance(doc_property, EmbeddedDocumentField):
+                return _find_embedded_property_default(doc_property, property_path)
+            else:
+                return doc_property.default
+        
         if self._model.schemaless:
             # A schemaless model does not require shifting
             return
+        examine = self.examine()
+        if not examine:
+            # If nothing has to be done, then exit
+            # TODO: Make a better exit that provides better information
+            return
+        
+        db = self._get_database()
+        collection = self._get_collection(db)
+        field_path: str
+        
+        # First manage fields that have been removed
+        for field_path in self.should_shift['removed_fields']:
+            collection.update_many({}, {'$unset': {field_path: 1}}, bypass_document_validation=True)
+        
+        # Then add new fields
+        for field_path in self.should_shift['new_fields']:
+            if '.' in field_path:
+                # New field in an embedded document
+                property_path = field_path.split('.')
+                field = property_path.pop(0)
+                model_field = self._model.fields[field]
+                value = _find_embedded_property_default(model_field, property_path)
+            else:
+                model_field = self._model.fields[field_path]
+                value = model_field.default
+            collection.update_many({}, {'$set': {field_path, value}}, bypass_document_validation=True)
+        
+        # Finally, modify altered fields
+        for field_path in self.should_shift['altered_fields']:
+            if '.' in field_path:
+                property_path = field_path.split('.')
+                field = property_path.pop(0)
+                model_field = self._model.fields[field]
+                value = _find_embedded_property_default(model_field, property_path)
+            else:
+                model_field = self._model.fields[field_path]
+                value = model_field.default
+            collection.update_many({}, {'$set': {field_path, value}}, bypass_document_validation=True)
+        
+        # Create the new schema
+        new_schema = self._model().get_collection_schema()
+        db.command('collMod', self._model.collection_name, 
+                   validator=new_schema, 
+                   validationLevel=self._model.validation_level)
