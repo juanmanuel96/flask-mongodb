@@ -2,7 +2,7 @@ import typing as t
 from copy import deepcopy
 from pymongo.errors import OperationFailure
 
-from flask_mongodb.core.exceptions import CollectionException, FieldError
+from flask_mongodb.core.exceptions import CollectionException, FieldError, MustRunStartDBCommand
 from flask_mongodb.core.wrappers import MongoCollection, MongoDatabase
 from flask_mongodb.models.fields import (EmbeddedDocumentField, EnumField,
                                          ObjectIdField, ReferenceIdField,
@@ -28,6 +28,7 @@ class BaseCollection:
         setattr(self, '_id', self._id)
         setattr(self, 'db_alias', self.db_alias)
         self._fields['_id'] = self._id
+        self._connected = False
         
         for name in dir(self):
             if not name.startswith('_'):
@@ -101,7 +102,19 @@ class BaseCollection:
             setattr(obj, k, deepcopy(v, memo))
         return obj
     
+    def _get_db_collection(self):
+        if self._connected:
+            return
+        
+        from flask_mongodb import current_mongo
+        
+        _db = current_mongo.connections[self.db_alias]
+        return MongoCollection(_db, self.collection_name, create=False)
+    
     def __define_validators__(self):
+        """
+        DEPRECATED: This method will be removed as of version 2
+        """
         validators = {
             '$jsonSchema': {
                 "bsonType": "object",
@@ -291,7 +304,13 @@ class BaseCollection:
     def pk(self):
         return self._id.data
     
+    def get_collection_schema(self):
+        return self.__define_validators__()
+    
     def connect(self, database: MongoDatabase):
+        """
+        DEPECATED: Will be removed as of version 2
+        """
         self.schema_validators = self.__define_validators__() if not self.schemaless else None
         try:
             # Will first try to create a collection
@@ -332,9 +351,26 @@ class CollectionModel(BaseCollection):
         
         self.schema_validators = None
     
+    def __assign_data_to_fields__(self):
+        for name in self.fields.keys():
+            value = self._initial.get(name)
+            if value is None:
+                # Ignore fields that do not exist
+                continue
+            self[name] = value
+            if hasattr(self.fields[name], '_reference') and self.fields[name].data:
+                self[f'{name}_id'] = value
+        
+        # Check for reference fields
+        for name, field in self.fields.items():
+            if hasattr(field, '_reference'):
+                id_field_of_ref = self[name + '_id']
+                if str(field.data) != str(id_field_of_ref):
+                    field.data = id_field_of_ref
+    
     @property
     def collection(self) -> t.Union[MongoCollection, None]:
-        return self.__collection__
+        return self._get_db_collection()
     
     def data(self, as_str=False, exclude=(), include_reference=True, include_all_references=False):
         _data = {}
@@ -358,23 +394,6 @@ class CollectionModel(BaseCollection):
             else:
                 _data[name] = field.data if not as_str else str(field.data)
         return _data
-    
-    def __assign_data_to_fields__(self):
-        for name in self.fields.keys():
-            value = self._initial.get(name)
-            if value is None:
-                # Ignore fields that do not exist
-                continue
-            self[name] = value
-            if hasattr(self.fields[name], '_reference') and self.fields[name].data:
-                self[f'{name}_id'] = value
-        
-        # Check for reference fields
-        for name, field in self.fields.items():
-            if hasattr(field, '_reference'):
-                id_field_of_ref = self[name + '_id']
-                if str(field.data) != str(id_field_of_ref):
-                    field.data = id_field_of_ref
     
     def set_model_data(self, data: dict):
         self._initial = data

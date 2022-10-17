@@ -94,3 +94,8 @@ class OperationNotAllowed(BaseFlaskMongodbException):
 
 class CollectionHasNoData(BaseFlaskMongodbException):
     default_message: str = 'Collection has no data'
+
+
+class MustRunStartDBCommand(BaseFlaskMongodbException):
+    default_message: str = 'Before starting the application, run `flask-mongodb shift start-db`'\
+        'command'
