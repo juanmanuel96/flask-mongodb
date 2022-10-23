@@ -30,6 +30,7 @@ class BaseCollection:
         self._fields['_id'] = self._id
         self._connected = False
         
+        # Prepare _fields attribute
         for name in dir(self):
             if not name.startswith('_'):
                 attr = getattr(self, name)
@@ -101,15 +102,6 @@ class BaseCollection:
         for k, v in self.__dict__.items():
             setattr(obj, k, deepcopy(v, memo))
         return obj
-    
-    def _get_db_collection(self):
-        if self._connected:
-            return
-        
-        from flask_mongodb import current_mongo
-        
-        _db = current_mongo.connections[self.db_alias]
-        return MongoCollection(_db, self.collection_name, create=False)
     
     def __define_validators__(self):
         """
@@ -307,20 +299,19 @@ class BaseCollection:
     def get_collection_schema(self):
         return self.__define_validators__()
     
-    def connect(self, database: MongoDatabase):
-        """
-        DEPECATED: Will be removed as of version 2
-        """
-        self.schema_validators = self.__define_validators__() if not self.schemaless else None
-        try:
-            # Will first try to create a collection
-            self.__collection__ = MongoCollection(database, self.collection_name, 
-                                                  create=True,
-                                                  validator=self.schema_validators,
-                                                  validationLevel=self.validation_level if not self.schemaless else None)
-        except OperationFailure as exc:
-            # If collection exists, use that collection
-            self.__collection__ = MongoCollection(database, self.collection_name)
+    def connect(self):
+        """Connect directly to the MongoDB Collection"""
+        if self._connected:
+            # Don't connect again
+            return None
+        from flask_mongodb import current_mongo
+        db = current_mongo.connections[self.db_alias]
+        self.__collection__ = MongoCollection(db, self.collection_name)
+        self._connected = True
+    
+    def disconnect(self):
+        self.__collection__ = None
+        self._connected = False
 
 
 class CollectionModel(BaseCollection):
@@ -368,10 +359,6 @@ class CollectionModel(BaseCollection):
                 if str(field.data) != str(id_field_of_ref):
                     field.data = id_field_of_ref
     
-    @property
-    def collection(self) -> t.Union[MongoCollection, None]:
-        return self._get_db_collection()
-    
     def data(self, as_str=False, exclude=(), include_reference=True, include_all_references=False):
         _data = {}
         for name, field in self.fields.items():
@@ -398,3 +385,7 @@ class CollectionModel(BaseCollection):
     def set_model_data(self, data: dict):
         self._initial = data
         self.__assign_data_to_fields__()
+    
+    @property
+    def collection(self) -> t.Union[MongoCollection, None]:
+        return self.__collection__

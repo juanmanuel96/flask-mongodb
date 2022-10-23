@@ -23,6 +23,15 @@ class BaseManager(InimitableObject):
                 _filter[key] = value
         return _filter
     
+    def __getattribute__(self, __name: str) -> t.Any:
+        attr = super().__getattribute__(__name)
+        if hasattr(attr, '_is_model'):
+            attr.connect()
+        return attr 
+    
+    def __getattr__(self, __name):
+        return super().__getattr__(__name) 
+    
     # Read operations
     def find(self, **filter):
         _filter = self._clean_query(**filter)

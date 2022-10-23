@@ -134,7 +134,8 @@ class MongoDB:
                     # _instance = obj()
                     if obj.db_alias not in self.__collections:
                         self.__collections[obj.db_alias] = {}
-                    self.__collections[obj.db_alias].update({_name: obj})
+                    # Initialize object to connect reference managers
+                    self.__collections[obj.db_alias].update({_name: obj()})
         
         # Now add the history model
         for db in self.connections.keys():
