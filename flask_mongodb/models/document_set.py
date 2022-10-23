@@ -2,7 +2,6 @@ import typing as t
 
 from copy import deepcopy
 from pymongo.cursor import Cursor
-from pymongo import DESCENDING
 
 from flask_mongodb.core.mixins import InimitableObject
 
@@ -17,7 +16,7 @@ class DocumentSet(InimitableObject):
         self.__cursor = Cursor(model.collection, *args, **kwargs)
     
     def __iter__(self):
-        return self.__cursor
+        return self
     
     def _model_representation(self, doc):
         m = deepcopy(self._model)
@@ -30,10 +29,10 @@ class DocumentSet(InimitableObject):
     __next__ = next
     
     def first(self):
-        doc = list(self.__cursor.clone().limit(-1))
+        doc = list(self.__cursor.clone().limit(-1))[0]
         if not doc:
             return None
-        m = self._model_representation(self.__cursor.limit(-1))
+        m = self._model_representation(doc)
         return m
     
     def last(self):

@@ -402,7 +402,5 @@ class ReferenceIdField(Field):
     
     @property
     def reference(self):
-        from flask_mongodb.globals import current_mongo
-        reference_model = current_mongo.get_collection(self.model)
-        ref = reference_model.manager.find_one(_id=self.data)
+        ref = self.model().manager.find_one(_id=self.data)
         return ref
