@@ -49,7 +49,7 @@ class Shift:
             return None
     
     def _get_model_schema(self):
-        return self._model().get_collection_schema()
+        return self._model.get_collection_schema()
     
     def _compare_model_to_collection(self, schema_properties: dict, model_fields: dict, 
                                      collection_data: dict, field_path=''):
@@ -158,7 +158,7 @@ class Shift:
             if isinstance(doc_property, EmbeddedDocumentField):
                 return _find_embedded_property_default(doc_property, property_path)
             else:
-                return doc_property.default
+                return doc_property.data
         
         if self._model.schemaless:
             # A schemaless model does not require shifting
@@ -187,8 +187,8 @@ class Shift:
                 value = _find_embedded_property_default(model_field, property_path)
             else:
                 model_field = self._model.fields[field_path]
-                value = model_field.default
-            collection.update_many({}, {'$set': {field_path, value}}, bypass_document_validation=True)
+                value = model_field.data
+            collection.update_many({}, {'$set': {field_path: value}}, bypass_document_validation=True)
         
         # Finally, modify altered fields
         for field_path in self.should_shift['altered_fields']:
@@ -199,11 +199,11 @@ class Shift:
                 value = _find_embedded_property_default(model_field, property_path)
             else:
                 model_field = self._model.fields[field_path]
-                value = model_field.default
-            collection.update_many({}, {'$set': {field_path, value}}, bypass_document_validation=True)
+                value = model_field.data
+            collection.update_many({}, {'$set': {field_path: value}}, bypass_document_validation=True)
         
         # Create the new schema
-        new_schema = self._model().get_collection_schema()
+        new_schema = self._model.get_collection_schema()
         db.command('collMod', self._model.collection_name, 
                    validator=new_schema, 
                    validationLevel=self._model.validation_level)
