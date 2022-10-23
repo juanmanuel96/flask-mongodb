@@ -3,7 +3,7 @@ from flask_mongodb.utils.version import get_version
 TITLE = 'Flask-MongoDB'
 DESCRIPTION = 'A Flask extension for connecting a MongoDB instance'
 URL = 'https://github.com/juanmanuel96/flask-mongodb'
-VERSION_INFO = (1, 6, 0, 'final', 0)
+VERSION_INFO = (1, 7, 0, 'alpha', 1)
 VERSION = get_version(VERSION_INFO)
 AUTHOR = 'Juan Vazquez'
 AUTHOR_EMAIL = 'juanmapr913@gmail.com'

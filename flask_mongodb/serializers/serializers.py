@@ -1,7 +1,6 @@
 import typing as t
 import itertools
 
-from flask import current_app
 from wtforms.form import BaseForm, FormMeta
 from wtforms.fields import Field
 
@@ -129,6 +128,12 @@ class Serializer(SerializerBase, metaclass=FormMeta):
         return self.__validated__
 
     @property
+    def data(self):
+        if not self.__validated__:
+            raise ValidationError("Run method `is_valid` first")
+        return super().data
+
+    @property
     def validated_data(self):
         if not self.__validated__:
             raise ValidationError("Run method `is_valid` first")
@@ -177,21 +182,25 @@ class Serializer(SerializerBase, metaclass=FormMeta):
         return is_valid
 
 
-class ModelSerializer(Serializer, ModelMixin):
+class ModelSerializer(Serializer):
     serializer_model: t.Type[CollectionModel] = None
 
-    def __init__(self, **kwargs):
+    def __init__(self, instance=None, **kwargs):
         """
         The Model Serializer is just and extension of the Serializer by 
         connecting a model to the serializer.
         """
         if self.serializer_model:
-            from flask_mongodb.models import CollectionModel
-            assert issubclass(self.serializer_model, CollectionModel)
-            self._model = current_app.mongo.get_collection(self.serializer_model)
+            assert hasattr(self.serializer_model, '_is_model')
+            self._model = self.serializer_model()
         else:
             raise MissingSerializerModel('Serializer Model must be specified')
+        self.instance = instance
         super().__init__(**kwargs)
+    
+    @property
+    def model(self):
+        return self._model
     
     @property
     def manager(self):
