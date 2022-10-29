@@ -38,28 +38,28 @@ class TestCollectionModels(BaseAppSetup):
         assert ack, 'Insert was not successfull'
 
     def test_getting_data_from_db(self, mongo: MongoDB):
-        model = mongo.get_collection(ModelForTest)
+        model = ModelForTest()
         ds = model.manager.find()
         
         assert isinstance(ds, DocumentSet), \
             'find() should return a DocumentSet'
 
     def test_document_set_elemets_are_models(self, mongo: MongoDB):
-        model = mongo.get_collection(ModelForTest)
+        model = ModelForTest()
         ds = model.manager.find()
         
         assert all([isinstance(item, ModelForTest) for item in ds]), \
             'All instaces must be of the ModelForTest'
 
     def test_inimitable_object(self, mongo: MongoDB):
-        model = mongo.get_collection(ModelForTest)
+        model = ModelForTest()
         instance: ModelForTest = model.manager.find().first()
         
         assert instance.collection is None, \
             "It seems that the collection was imitated"
 
     def test_required_field(self, mongo: MongoDB):
-        model = mongo.get_collection(ModelForTest2)
+        model = ModelForTest2()
         model['body'] = 'This is the body'
         
         with pytest.raises(WriteError):
@@ -81,14 +81,14 @@ class TestCollectionModels(BaseAppSetup):
             mongo.register_collection(UnnamedCollection)
     
     def test_update(self, mongo: MongoDB):
-        model1 = mongo.get_collection(ModelForTest)
+        model1 = ModelForTest()
         model1['sample_text'] = 'sample text changed'
         ack = model1.manager.update_one(query={'_id': model1.pk}, update=model1.data(include_reference=False))
         
         assert ack.acknowledged
     
     def test_delete(self, mongo: MongoDB):
-        model2 = mongo.get_collection(ModelForTest2)
+        model2 = ModelForTest2()
         model2.set_model_data({
             'title': 'title',
             'body': 'This is the body of the article'
