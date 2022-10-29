@@ -25,9 +25,9 @@ setup(
     },
     install_requires=[
         'Flask', 
-        'pymongo==4.0.2', 
-        'WTForms==3.0.1', 
-        'email-validator==1.1.3'],
+        'pymongo', 
+        'WTForms', 
+        'email-validator'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
