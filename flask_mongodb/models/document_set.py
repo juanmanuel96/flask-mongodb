@@ -6,69 +6,67 @@ from pymongo.cursor import Cursor
 from flask_mongodb.core.mixins import InimitableObject
 
 
+class NotACursorMethod(Exception):
+    pass
+
+
 class DocumentSet(InimitableObject):
-    def __init__(self, model, *, cursor=None, document=None):
+    def __init__(self, model, *args, **kwargs):
         self._model = model
-        self.cursor: Cursor = cursor
-        self.document: t.Dict[str, t.Any] = document
-        self._set = list()
-    
-    def __call__(self):
-        if self.cursor:
-            for doc in self.cursor:
-                m = deepcopy(self._model)
-                m.set_model_data(doc)
-                self._set.append(m)
-        else:
-            m = deepcopy(self._model)
-            m.set_model_data(self.document)
-            return m
-        return self
+        self.__cursor = Cursor(model.collection, *args, **kwargs)
     
     def __iter__(self):
-        self._check_if_is_cursor(msg='Cannot iterate')
-        return iter(self._set)
-    
-    def __next__(self):
-        return next(self._set)
-    
-    def _check_if_is_cursor(self, msg=None):
-        message = msg if msg else 'Cannot call method of DocumentSet without a cursor'
-        if not self.cursor:
-            raise ValueError(message)
-    
-    def first(self):
-        self._check_if_is_cursor()
-        return self._set[0]
-    
-    def last(self):
-        self._check_if_is_cursor()
-        return self._set[-1]
-    
-    def count(self):
-        return len(self._set)
-    
-    def limit(self, limit):
-        self._check_if_is_cursor()
-        self.cursor = self.cursor.limit(limit)
-        if self._set:
-            # Clear the set before limiting
-            self._set.clear()
-        for doc in self.cursor:
-            m = deepcopy(self._model)
-            m.set_model_data(doc)
-            self._set.append(m)
         return self
     
-    # TODO: Disabled
-    # def sort(self, key_or_list=None, direction=None):
-    #     self._check_if_is_cursor()
-    #     self.cursor = self.cursor.sort(key_or_list=key_or_list, direction=direction)
-    #     if self._set:
-    #         # Clear the set before sorting
-    #         self._set.clear()
-    #     for doc in self.cursor:
-    #         m = deepcopy(self._model)
-    #         m.set_model_data(doc)
-    #         self._set.append(m)
-    #     return self
+    def _model_representation(self, doc):
+        m = deepcopy(self._model)
+        m.set_model_data(doc)
+        return m
+    
+    def next(self):
+        return self._model_representation(next(self.__cursor))
+    
+    __next__ = next
+    
+    def first(self):
+        doc = list(self.__cursor.clone().limit(-1))[0]
+        if not doc:
+            return None
+        m = self._model_representation(doc)
+        return m
+    
+    def last(self):
+        doc = list(self.__cursor.clone())[-1]
+        if not doc:
+            return None
+        m = self._model_representation(doc)
+        return m
+    
+    def limit(self, number):
+        self.__cursor = self.__cursor.limit(number)
+    
+    def sort(self, key_or_list, direction=None):
+        self.__cursor = self.__cursor.sort(key_or_list, direction)
+    
+    def count(self):
+        return len(list(self.__cursor.clone()))
+    
+    def run_cursor_method(self, meth_name: str, *args, **kwargs):
+        """Run a direct cursor method"""
+        if meth_name.startswith('_'):
+            raise NotACursorMethod('Cannot call attributes that start with _')
+        
+        meth = getattr(self.__cursor, meth_name, None)
+        
+        if meth is None:
+            raise NotACursorMethod(f'Method `{meth_name} is not part of the Cursor class')
+        if not callable(meth):
+            raise NotACursorMethod(f'{meth_name} not a method of the Cursor class')
+        if meth_name == 'clone':
+            raise NotACursorMethod('Cannot run the clone method')
+        
+        obj = meth(*args, **kwargs)
+        if isinstance(obj, Cursor):
+            self.__cursor = obj
+        else:
+            return obj

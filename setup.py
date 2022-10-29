@@ -18,11 +18,16 @@ setup(
     maintainer_email=AUTHOR_EMAIL,
     license='BSD-2-Clause License',
     packages=find_packages(),
+    entry_points={
+        'console_scripts': [
+            'flask-mongodb = flask_mongodb.cli.cli:main'
+        ]
+    },
     install_requires=[
-        'Flask==2.0.3', 
-        'pymongo==4.0.2', 
-        'WTForms==3.0.1', 
-        'email-validator==1.1.3'],
+        'Flask', 
+        'pymongo', 
+        'WTForms', 
+        'email-validator'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',

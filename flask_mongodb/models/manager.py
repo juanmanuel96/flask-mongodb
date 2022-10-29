@@ -23,11 +23,19 @@ class BaseManager(InimitableObject):
                 _filter[key] = value
         return _filter
     
+    def __getattribute__(self, __name: str) -> t.Any:
+        attr = super().__getattribute__(__name)
+        if hasattr(attr, '_is_model'):
+            attr.connect()
+        return attr 
+    
+    def __getattr__(self, __name):
+        return super().__getattr__(__name) 
+    
     # Read operations
     def find(self, **filter):
         _filter = self._clean_query(**filter)
-        cursor = self._model.collection.find(_filter)
-        docuset = DocumentSet(self._model, cursor=cursor)()
+        docuset = DocumentSet(self._model, filter=_filter)
         return docuset
     
     def all(self):
@@ -37,10 +45,8 @@ class BaseManager(InimitableObject):
         if '_id' in filter and isinstance(filter['_id'], str):
             filter['_id'] = ObjectId(filter['_id'])
         _filter = self._clean_query(**filter)
-        doc = self._model.collection.find_one(_filter)
-        if doc is None:
-            return None
-        model = DocumentSet(self._model, document=doc)()
+        docuset = DocumentSet(self._model, filter=_filter)
+        model = docuset.first()
         return model
     
     # Create, Update, Delete (CUD) operations    
