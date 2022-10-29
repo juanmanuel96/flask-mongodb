@@ -37,7 +37,7 @@ class TestReferenceAndReverseRelations(TestReferencesSetUp):
     
     def test_add_new_car_model(self, gm_company: CarCompany, mongo: MongoDB):
         total_company_models = gm_company.car_models.all().count()  # Should be 1
-        car = mongo.get_collection(CarModel)
+        car = CarModel()
         car.set_model_data({'company': gm_company.pk, 'make': 'Chevrolet', 'car_model': 'Corvette',
                               'color': 'red', 'year': 2022})
         car.manager.insert_one(car.data(include_reference=False))

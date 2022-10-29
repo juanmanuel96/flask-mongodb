@@ -50,7 +50,7 @@ class TestModelSerializer(BaseAppSetup):
     
     def test_sucessful_update_from_serializer(self, mongo: MongoDB):
         # First get the sample
-        sample = mongo.get_collection(ModelForTest2).manager.find_one(title='Sample title')
+        sample = ModelForTest2().manager.find_one(title='Sample title')
         sample['body'] = 'This body has been updated'  # Change the body
         
         # Serialize, validate, and update
@@ -60,7 +60,7 @@ class TestModelSerializer(BaseAppSetup):
                                             update={'body': serializer.validated_data['body']})
         
         # Fecth the updated sample
-        new_sample = mongo.get_collection(ModelForTest2).manager.find_one(_id=sample.pk)
+        new_sample = ModelForTest2().manager.find_one(_id=sample.pk)
         
         # Compare
         assert valid and ack.acknowledged and (new_sample['body'] == 'This body has been updated')
