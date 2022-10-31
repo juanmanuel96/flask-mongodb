@@ -6,9 +6,9 @@ Flask-MongoDB is a Flask extension for connecting one or more MongoDB connection
 
 Currently, the package is not in pip. However, you can install the package with pip by pulling from GitHub with the follwing command: 
 ```
-pip install -e git+https://github.com/juanmanuel96/flask-mongodb@v1.5.0#egg=flask_mongodb
+pip install git+https://github.com/juanmanuel96/flask-mongodb@v1.7.0
 ```
-If you wish to install a specific version, change the `@v1.5.0` by whichever you want or remove it entirely to pull the latest code from the `main` branch. 
+If you wish to install a specific version, change the `@v1.7.0` by whichever you want or remove it entirely to pull the latest code from the `main` branch. 
 
 # Quick Start
 
@@ -16,7 +16,7 @@ This quick start guide will help you set up a Flask application with Flask-Mongo
 
 ## Configuration
 
-The first step is to set the Flask configurations. Flask-MongoDB only has two configurations: `DATABASE` and `MODELS`. The former tells the MongoDB instance to which databases to connect to while the latter tells the instance where the models are located. 
+The first step is to set the Flask configurations. Flask-MongoDB only has two configurations: `DATABASE` and `MODELS`. The former tells the MongoDB instance to which databases to connect to, while the latter tells the instance where the models are located. 
 
 The `DATABASE` configuration must be a dictionary of dictionaries where the first level key is the database alias for the application and the value dictionary must have the host, port, database name, and username and password if it applies. You can connect as many databases as you want. They can even come from different hosts. Flask-MongoDB has default values for both configurations:
 ```python
@@ -55,4 +55,12 @@ To connect your MongoDB instance to the Flask instance, you have two options:
 1. Pass the Flask instance as parameter of the `MongoDB` instanciation 
 2. Use the factory method and call the `init_app` method from `MongoDB` passing a Flask instance as parameter.
 
-Staring the application will automatically create the database and collections if necessary.
+## Starting the databae
+
+Before actually running the application, you must create the database (or databases) and its collections. Run the following command to create the databases of your application.
+
+```
+flask-mongodb shift start-db --all
+```
+
+This is part of the CLI tool of the package, which will be covered later in the documentation.

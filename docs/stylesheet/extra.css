@@ -17,3 +17,8 @@
     font-weight: bold;
     font-family: 'Courier New', Courier, monospace;
 }
+
+.wy-nav-content {
+    margin-right: 5em;
+    padding-left: 1em;
+}
