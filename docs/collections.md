@@ -2,11 +2,11 @@
 
 Flask-MongoDB has a modelling class for your collections. The idea behind the models is somewhat the same as for the Django framework. The difference stands in the complexity behind the creation of these models compared to the ones of Django. Flask-MongoDB has a philosophy of making it easier for the developer to have their MongoDB collections well structured while still offering of having the data not so structured. 
 
-A `CollectionModel` from Flask-MongoDB represents a collection of a particular database. It is composed of two components: metadata and fields. 
+A `CollectionModel` from Flask-MongoDB represents a collection of a particular database. It is composed of metadata, fields, and the manager. 
 
 ## The collection metadata
 
-Its metadata are three class attributes: `collection_name`, `db_alias`, and `schemaless`. The former must be specified in all models while the last two have default values `main` and `False`. By default a collection belongs to the main database and applies schema validation at the DB level. The `schemaless` attribute is used to enable or disable schema validation, it does not remove the requirement of fields. Schema validation can be completely turned off from collection to collection, if the developer chooses so. 
+Its metadata are three class attributes: `collection_name`, `db_alias`, and `schemaless`. The first one must be specified in all models while the last two have default values `main` and `False`. By default a collection belongs to the main database and applies schema validation at the DB level. The `schemaless` attribute is used to enable or disable schema validation, it does not remove the requirement of fields. Schema validation can be completely turned off from collection to collection, if the developer chooses so. 
 
 ## A collection's fields or schema
 
@@ -71,7 +71,7 @@ This is all that is required to create a model. Add this model package to the `M
 
 # Making queries
 
-MongoDB querying system uses JSON to make DB queries. Collection models come with a manager attribute which can run queries. The methods for running queries with the manager have the same name as the Collection instance from pymongo.
+MongoDB querying system uses JSON to make DB queries. Collection models instacnes come with a manager attribute which can run queries. The methods for running queries with the manager have the same name as the Collection instance from pymongo.
 
 ## Collection Manager
 
@@ -83,6 +83,35 @@ The `manager` attribute is an instance of the `CollectionManager` class. This cl
 - `update_one`: Updates only one document in the collection, default update type is `$set`
 - `delete_one`: Deletes a single document in the collection
 
+## ReferenceManager
+
+The ReferenceManager class...
+
 ## Document Sets
 
-The `DocumentSet` class is a list like class where it contains copies of the model with the corresponding values from the collection documents. Only the `find` function of the manager returns a document set. 
+The `DocumentSet` class is a list like class where it contains copies of the model with the corresponding values from the collection documents. Only the `find` function of the manager returns a document set. The DocumentSet instance has a `Cursor` object that is the query result. Iterating through the DocumentSet will return a representation of the current document in its model form.
+
+### DocumentSet methods
+
+The DocumentSet implements many of the Cursor class methods. 
+
+#### first method
+
+The `first` method returns the first document of the query result.
+
+#### last method
+
+Just like the `first` method returns the first document of the query result, the `last` method returns the last one.
+
+#### limit method
+
+The `limit` method returns the first n documents of the query result.
+
+#### count method
+
+The `count` method returns an int representation of the total documents of the query result.
+
+
+#### run_cursor_method
+
+This method allows the developer to manually run methods of the `Cursor` class on the DocumentSet instance.

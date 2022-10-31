@@ -24,7 +24,7 @@ DATABASE = {
 
 The `main` alias should always be present since by default all models are connected to main. However, it is up to you for setting the DB alias names. If `main` is not present, you must make sure that no model belongs to the `main` database. DB aliases on models will be covered later.
 
-It is recommended that in your configurations add a `DATABASE` variable to overwrite the default configurations and connect to your database. Remember that once you start the application, if the database does not exist it is created automatically. In your `DATABASE` variable, the first key is the database alias. It's value should be another dictionary with the following keys:
+It is recommended that in your configurations add a `DATABASE` variable to overwrite the default configurations and connect to your database. Remember that once you start the application, if the database does not exist it is created automatically. In your `DATABASE` variable, the first key is the database alias. Its value should be another dictionary with the following keys:
 
 1. `HOST` - Host where the database is located (required)
 2. `PORT` - Port of the database (required)
@@ -34,7 +34,9 @@ It is recommended that in your configurations add a `DATABASE` variable to overw
 
 ## Models configuration
 
-The `MODELS` configuration provides an alternative for registering models to the MongoDB instance automatically and easily. Another way of registering models is by doing it manually with the `register_collection` method of the MongoDB class. While it is very similar to Flask's `register_blueprint` method, it is not scalable. That is where the `MODELS` variable come in to play. This variable must be a list of strings.
+The `MODELS` configuration provides is the main method for registering models to the MongoDB instance automatically and easily. Another way of registering models is by doing it manually with the `register_collection` method of the MongoDB class. While it is very similar to Flask's `register_blueprint` method, it is not scalable. That is where the `MODELS` configurations comes in to play. This variable must be a list of strings.
+
+> **NOTE:** The `register_collection` method has been deprecated as of version 1.7.0. Rely on the `MODELS` configuration.
 
 To register models automatically, simply add to the list the package path to the models. For exmaple, if you have a project with the following structure:
 
@@ -53,7 +55,6 @@ api
         |__ inventory.py
     |__ views
         |__ ...
-app.py
 ```
 
 You would want to register your authentication and store models automatically. In your configurations, create a new variable called MODELS. This variable must be a list. You should add `api.authentication` and `api.store` to the MODELS variable. Note that you do not add "models" to each of the package paths because the MongoDB instance will automatically search for `models` inside your packages. Your MODELS variable should look like this:
@@ -65,7 +66,7 @@ MODELS = [
 ]
 ```
 
-If you were to install other packages with Flask-MongoDB models, you would add the path to those models in the MODELS variable as well.
+If you were to install other packages with Flask-MongoDB models, you would add the path to those models in the MODELS variable as well. The models file can be treated as package or as a simple file with all of the models in it.
 
 # Using the MongoDB instance at runtime
 
@@ -91,15 +92,19 @@ Besides using the `current_app` proxy, you can use the `current_mongo` proxy. Th
 
 ## Importing the MongoDB instance
 
-In your app initialization file, you have to initialize your MongoDB instance after the Flask instance. After initialization, you can call the MongoDB instance directly like you would with the Flask instance. There is a caveat, though. This will not work with the app factory method or might raise import errors depending on how and where you make the import in your application. This methos is highly discouraged. 
+In your app initialization file, you have to initialize your MongoDB instance after the Flask instance. After initialization, you can call the MongoDB instance directly like you would with the Flask instance. There is a caveat, though. This will not work with the app factory method or might raise import errors depending on how and where you make the import in your application. This method is highly discouraged.
 
 # Using models at runtime
 
 While developing your application, you will want to use the models. There are ways for you to get a model and use it during runtime. This section will explain all of the different methods for getting the models and using them.
 
+## Importing the model
+
+You can import any of your models as you would import any other class in Python. To use the model simply initialize it and you can do all sorts of DB operations or model oprations with it. 
+
 ## The `get_collection` method
 
-The MongoDB class has a method called `get_collection` which is used to get a model registered model instance. This method has one required parameter. It must be the class type of the instance you wish to get. For example, let's say you have a `BlogPost` model and registered it automatically as explained above. To get the registered model instance, you would call the `get_collection` method from the MongoDB instance and pass the class `BlogPost` as parameters.
+Another way is using the method `get_collection` which is used to get a model registered model instance. This method has one required parameter. It must be the class type of the instance you wish to get. For example, let's say you have a `BlogPost` model and registered it automatically as explained above. To get the registered model instance, you would call the `get_collection` method from the MongoDB instance and pass the class `BlogPost` as parameters.
 
 ```python
 from flask_mongodb import current_mongo
@@ -108,4 +113,6 @@ from ..blog.models import BlogPost
 post_model = current_mongo.get_collection(BlogPost)
 ```
 
-This will return the instance of `BlogPost` model which was registered automatically. Through it you can make queries, create collection documents, updating documents, etc.
+This will return the instance of `BlogPost` model which was registered automatically.
+
+> **NOTE:** As of verion 1.7.0, this method has been deprecated.

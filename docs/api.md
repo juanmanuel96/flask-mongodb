@@ -14,6 +14,8 @@ Configures the Flask instance with the MongoDB instance. This is the prefered me
 
 <span class="class_attr">register_collection</span>(_collection_cls_)
 
+**DEPRECATED**
+
 Registers a collection model to the MongoDB instance. 
 
 ** Parameters **
@@ -21,6 +23,8 @@ Registers a collection model to the MongoDB instance.
 - `collection_cls`: Class of the model desired to be registered
 
 <span class="class_attr">get_collection</span>(_collection_, _default=None_)
+
+**DEPRECATED**
 
 Retrieves registered collection model If the model is not registered, will return `None`. 
 
@@ -40,15 +44,15 @@ Closes the connection of the desired database by alias.
 
 _property_ <span class="class_attr">collections</span>
 
-Returns a dictionary of the registered collections.
+Returns a dictionary of the registered collections per database alias.
 
 _property_ <span class="class_attr">connections</span>
 
-Returns a dictionary of the MongoDatabase instances.
+Returns a dictionary of the MongoDatabase instances per database alias.
 
 ## Collection Models
 
-_class_ <span class="py_class">flask_mongodb.CollectionModel</span>(_\*\*field_values_)
+_class_ <span class="py_class">flask_mongodb.models.collection.BaseCollection</span>()
 
 The CollectionModel object is a representation of the collection in the database. 
 
@@ -59,3 +63,171 @@ The name of the collection in the database. This attribute **MUST** be given or 
 <span class="class_attr">db_alias</span>='main'
 
 Default detabase alias the collection belongs to.
+
+<span class="class_attr">schemaless</span>=False
+
+Defines if your collection has a schema or not.
+
+<span class="class_attr">validation_level</span>='strict'
+
+MongoDB collection validation level.
+
+<span class="class_attr">manager_class</span>=<span class="class_attr">CollectionManager</span>
+
+Manager class for the collection.
+
+<span class="class_attr">get_collection_schema</span>()
+
+Get the collection schema in JSON format.
+
+<span class="class_attr">connect</span>()
+
+Create a connection between your model and the collection. 
+
+> **NOTE:** This requires your application to be at the top of the context stack.
+
+<span class="class_attr">disconnect</span>()
+
+Disconnect your model from the collection.
+
+_property_ <span class="class_attr">manager</span>
+
+Property for the manager instance. 
+
+_proterty_ <span class="class_attr">fields</span>
+
+Property for the model's fields.
+
+_property_ <span class="class_attr">pk</span>
+
+Property for the _id field of the model, the primary key.
+
+_class_ <span class="py_class">flask_mongodb.CollectionModel</span>(_\*\*field_values_)
+
+Inherits from BaseCollection. Base class for all your models to inherit from. Use keyword arguments to give initial values to your deseried fields.
+
+<span class="class_attr">data</span>(_as_str=False, exclude=(), include_reference=True, include_all_references=False_)
+
+Returns a dict-like representation of the model fields and its values.
+
+<span class="class_attr">set_model_data</span>(_data_)
+
+Sets the model fields values with the provided data. The `data` parameter must be a dictionary where the keys must be strings.
+
+_property_ <span class="class_attr">collection</span>
+
+Property for getting the `MongoCollection` instance. Will return `None` if the model hasn't been connected.
+
+## Model fields
+
+_class_ <span class='py_class'>flask_mongodb.models.fields.Field</span>(_required=True, allow_null=False, default=None, clean_data_func=None_)
+
+Base class for all fields to inherit from.
+
+<span class="class_attr">set_data</span>(_value_)
+
+This method sets the field's value. It must be overriden by child classes to properly assign the value with the correct type.
+
+<span class="class_attr">get_data</span>()
+
+Returns the field's value. This method does not need to be overriden, but you can if you wish to do some opertation before the data is returned.
+
+<span class="class_attr">run_validation</span>(_value_)
+
+Method for running the field's `validate_data` method if it has not been validated.
+
+<span class="class_attr">validate_data</span>(_value_)
+
+Method for validating the incomming data for the field. After it has been ran, it sets the `_validated` flag to True. When creating a custom field, this method's super must be executed after the validation logic.
+
+<span class="class_attr">clean_data</span>()
+
+Exevutes the `clean_data_func` if it has been provided, otherwise returns the field's value.
+
+<span class="class_attr">clear</span>()
+
+Clears the field's value, sets it to None.
+
+_property_ <span class="class_attr">data</span>
+
+Property for the field's value. If the data is callable, the function is executed and the return value is returned. Otherwise, executes the `get_data` method.
+
+_class_ <span class='py_class'>flask_mongodb.models.fields.ObjectIdField</span>(_required=True, allow_null=False, default=ObjectId_)
+
+Field type that represents an ObjectId item in a MongoDB collection.
+
+## Managers
+
+_class_ <span class='py_class'>flask_mongodb.models.manager.BaseManager</span>(_model=None_)
+
+Manager class for all models. Takes in the current model as parameter. 
+
+<span class="class_attr">find</span>(_\*\*filter_)
+
+Returns a `DocumentSet` with all of the found documents set by the filter. To get all documents in the collection, do not provider a filter.
+
+<span class="class_attr">all</span>()
+
+This method is the same as running the `find` method without any filters.
+
+<span class="class_attr">find_one</span>(_\*\*filter_)
+
+Get the first document found by the filter. Returns in model representation of the document.as
+
+<span class="class_attr">insert_one</span>(_insert_data, **options_)
+
+Insert a single document into the database. With the `options` kwargs, you can pass pymongo and MongoDB optins to the pymongo counterpart method.
+
+<span class="class_attr">update_one</span>(_query, update, update_type='$set', **options_)
+
+Update the first document that meets the filter with the desired update. By default, the update type is set to `$set` but it can be modified to other MongoDB update types such as `$push`.
+
+<span class="class_attr">delete_one</span>(_query, **options_)
+
+Delete the first document that meets the query filter. 
+
+<span class="class_attr">delete_many</span>(_query, **options_)
+
+Delete all every document that meets the query filter. 
+
+_class_ <span class='py_class'>flask_mongodb.models.manager.CollectionManager</span>(_model=None_)
+
+Main manager class for all models. When creating a custom manager class, inherit from this class.
+
+_class_ <span class='py_class'>flask_mongodb.models.manager.RefrenceManager</span>(_model=None, field_name=None_)
+
+This manager handles the reverse references when a model has a RefrenceIdField. It inherits from the `BaseManager` class with only the `find`, `all`, and `find_one` methods enabled. 
+
+## DocumentSet
+
+_class_ <span class='py_class'>flask_mongodb.models.document_set.DocumentSet</span>(_model=None_)
+
+A list-like object that represents the results of a query. Lazily loads each document in model representation.
+
+<span class="class_attr">first</span>()
+
+Get the first document in model representation of the query result.
+
+<span class="class_attr">last</span>()
+
+Get the last document in model representation of the query result.
+
+<span class="class_attr">limit</span>(_number_)
+
+Limit the number of documents from the query result.
+
+<span class="class_attr">sort</span>(_key_or_list, direction=None_)
+
+Sort the document in the ordered desired. Use the same sorting convention you would use for a pymongo Cursor.
+
+<span class="class_attr">count</span>()
+
+Return the total number of documents from the query.
+
+<span class="class_attr">run_cursor_method</span>(_meth_name, \*args, \*\*kwargs_)
+
+Run a method from the cursor class in your document set. It cannot be a magic method (methods that begin with "_") nor any of the predefiend of the class, or the clone method.
+
+## Serializers
+
+_class_ <span class='py_class'>flask_mongodb.Serializers</span>(_model=None_)
