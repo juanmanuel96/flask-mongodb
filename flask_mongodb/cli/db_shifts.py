@@ -20,7 +20,7 @@ def show_shifts(database):
     history = ShiftHistory()
     data = history.manager.all()
     
-    if len(data) < 1:
+    if data.count() < 1:
         echo('No history yet, execute the run command to make a history')
     else:
         for d in data:
