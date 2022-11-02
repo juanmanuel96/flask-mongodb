@@ -15,7 +15,7 @@ nav:
     - API Reference: api.md
   - Changelog:
     - Changelog: changelog.md
-    - Version: "../"
+    # - Version: "../"
 
 theme:
   name: readthedocs
@@ -26,8 +26,10 @@ extra_css:
 extra: 
   pkg_version: v1.7.1
 
+# site_dir: 'documentation'
+
 plugins:
   - search
-  - mkdocs-versioning:
-      version: v1.7.x
+  # - mkdocs-versioning:
+  #     version: v1.7.x
   - markdownextradata
