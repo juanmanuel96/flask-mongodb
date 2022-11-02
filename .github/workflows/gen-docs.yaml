@@ -4,7 +4,7 @@ name: Deploy Flask-MongoDB docs to Pages
 on:
   push:
     branches:
-      - documentations
+      - documentation
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 #permissions:
