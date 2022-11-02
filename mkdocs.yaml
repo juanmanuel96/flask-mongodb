@@ -23,7 +23,11 @@ theme:
 extra_css: 
   - stylesheet/extra.css
 
+extra: 
+  pkg_version: v1.7.1
+
 plugins:
   - search
   - mkdocs-versioning:
-      version: v1.7.0
+      version: v1.7.x
+  - markdownextradata

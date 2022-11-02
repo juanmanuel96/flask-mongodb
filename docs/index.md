@@ -6,9 +6,9 @@ Flask-MongoDB is a Flask extension for connecting one or more MongoDB connection
 
 Currently, the package is not in pip. However, you can install the package with pip by pulling from GitHub with the follwing command: 
 ```
-pip install git+https://github.com/juanmanuel96/flask-mongodb@v1.7.0
+pip install git+https://github.com/juanmanuel96/flask-mongodb@v{{ pkg_version }}
 ```
-If you wish to install a specific version, change the `@v1.7.0` by whichever you want or remove it entirely to pull the latest code from the `main` branch. 
+If you wish to install a specific version, change the `{{ pkg_version }}` by whichever you want or remove it entirely to pull the latest code from the `main` branch. 
 
 # Quick Start
 
