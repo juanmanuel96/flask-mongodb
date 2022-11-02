@@ -23,7 +23,7 @@ jobs:
     environment:
       name: github-pages
       # url: ${{ steps.deployment.outputs.page_url }}
-      url: 'https://juanmanuel96.github.io/flask-mongodb/'
+      url: 'https://juanmanuel96.github.io/flask-mongodb/site/'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
