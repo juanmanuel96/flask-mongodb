@@ -2,7 +2,7 @@
 
 Flask-MongoDB comes with a CLI tool to run database operations which are very hard to run during application runtime. Some examples are creating a database and its collections, or updating a collection when a field is altered or created. To run the CLI tool, open your terminal and execute the `flask-mongodb` command.
 
-# Commands
+## Commands
 
 This section will describe all of the command available with the CLI tool. Note that running the base command will print out the help guide, it is the same as using the --help flag.
 
@@ -11,18 +11,18 @@ The flask-mongodb is the main command for all other commands of the tool. Option
 * --version: Prints out the package version
 * --help: Prints out the help information
 
-## create-model
+### create-model
 
 This command will create a model file in the directory of your choosing. This command simply replaces the process of having to create manually each file or python package. Options for this command:
 
 * --path: Path to where the file will be created, providing no path will create it in the location where the command is executed
 * --package: Creates a package
 
-## shift
+### shift
 
 The shift command is used to generate database shift. In Flask-MongoDB database shifting is the concept of altering the database either by creating it or modifying an existing one. The CLI tool was born to satisfy this need of the package. This command cannot run alone on its own it has a set of subcommands that make the use of shifting possible.
 
-### start-db
+#### start-db
 
 This command creates databases to be used by your application. It should be ran once the databases have been defined in the configurations of the application. Models do not have to be created before hand to create the database, it would be ideal but not necessary. The `start-db` command has an option for specifying a model to be created.
 
@@ -35,7 +35,7 @@ Options for this command:
 * --path, -p: Model path with dot notation
 * --help: Display help information
 
-### history
+#### history
 
 This command will go through the `shift_hisotry` collection of the database and print the datetime and collection name that was shifted.
 
@@ -44,7 +44,7 @@ Options for this command:
 * --database, -d: Specify the database to see the shift history
 * --help: Display help information
 
-### examine
+#### examine
 
 This command will compere a collection of the the databse current state, specifically the schema, with the collection model's schema. After the examination has been completed, the command will output detailing which colletions of the current database will require shifting. The examine will look for new fields, field alterations (e.g. changing a StringField to an EnumField), and
 
@@ -54,7 +54,7 @@ Options for this command:
 * --collection, -c: Specify the collection name to examine
 * --help: Display help information
 
-### run
+#### run
 
 The run command will execute the shifts necessary for the databases. Shifting does another examination before applying the shifts.
 
