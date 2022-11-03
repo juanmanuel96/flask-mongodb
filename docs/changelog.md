@@ -3,18 +3,28 @@
 The structure for the changelog will be the following:
 
 ```
-# Version Number
-## Features
+## Version Number
+### Features
     - New stuff
-## Fixes
+### Fixes
     - Fixed stuff
 ```
 
 <hr>
 
-# v1.7.0
+## v1.7.1
 
-## Features
+### Features
+
+* None
+
+### Fixes
+
+* Fixed `history` command of the CLI tool`.
+
+## v1.7.0
+
+### Features
 
 * CLI Tool
   * create-model command
@@ -27,7 +37,7 @@ The structure for the changelog will be the following:
 * Ability to import models diretly in your code without having to use the `get_collection` method and apply field values during initialization of model.
 * Refre
 
-## Fixes
+### Fixes
 
 * DocumentSet methods are now usable
 * Serializers can do database operations
