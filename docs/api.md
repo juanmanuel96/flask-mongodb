@@ -186,6 +186,22 @@ _class_ <span class='py_class'>flask_mongodb.models.fields.ObjectIdField</span>(
 
 Field type that represents an ObjectId item in a MongoDB collection.
 
+_class_ <span class='py_class'>flask_mongodb.models.fields.StringField</span>(_min_length=0, max_length=0, required=True, allow_null=False, default=''_)
+
+Field type that represents an string item in a MongoDB collection.
+
+_class_ <span class='py_class'>flask_mongodb.models.fields.PasswordField</span>
+
+Inherits from `StringField`, but hashes the data.
+
+_class_ <span class='py_class'>flask_mongodb.models.fields.IntegerField</span>(_required: bool = True, allow_null=False, default=0_)
+
+Field type that represents an integer item in a MongoDB collection.
+
+_class_ <span class='py_class'>flask_mongodb.models.fields.FloatField</span>(_required: bool = True, allow_null=False, default=0.0_)
+
+Field type that represents a double item in a MongoDB collection.
+
 ## Managers
 
 _class_ <span class='py_class'>flask_mongodb.models.manager.BaseManager</span>(_model=None_)
@@ -276,3 +292,10 @@ Run a method from the cursor class in your document set. It cannot be a magic me
 * `meth_name`: Name of the method of the cursor to run
 * `*args`: Args to pass to the pymongo Cursor method
 * `**kwargs`: Keyword arguments to pass to the pymongo Cursor method
+
+
+## Serializers
+
+_class_ <span class='py_class'>flask_mongodb.serializers.Serializer</span>(_data=None, formdata=None, obj=None, prefix="", meta=None, **kwargs_)
+
+A data validation class.
