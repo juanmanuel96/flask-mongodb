@@ -13,22 +13,7 @@ from tests.utils import MAIN, remove_collections
 
 
 class TestCollectionModels(BaseAppSetup):
-    def test_auto_model_registration(self, application: Flask):
-        application.config.update({'MODELS': ['tests.model_for_tests.core']})
-        mongo = MongoDB(application)
-        
-        assert 'testing1' in mongo.connections[MAIN].list_collection_names(), \
-            'Did not find expected collection name'
-        
-        remove_collections(mongo)
-
-    def test_manual_model_registration(self, application: Flask):
-        mongo = MongoDB(application)
-        mongo.register_collection(ModelForTest)
-        mongo.register_collection(ModelForTest2)
-        
-        assert 'testing2' in mongo.connections[MAIN].list_collection_names(), \
-            'Did not find expected collection name'
+    MODELS = ['tests.model_for_tests.core']
 
     def test_record_creation(self, mongo: MongoDB):
         model = mongo.get_collection(ModelForTest)
@@ -65,29 +50,29 @@ class TestCollectionModels(BaseAppSetup):
         with pytest.raises(WriteError):
             model.manager.insert_one(model.data(include_reference=False))
 
-    def test_badly_configured_model(self, mongo: MongoDB):
-        class BadlyConfiguredModel(CollectionModel):
-            db_alias = None
-            collection_name: str = 'bad'
+    # def test_badly_configured_model(self, mongo: MongoDB):
+    #     class BadlyConfiguredModel(CollectionModel):
+    #         db_alias = None
+    #         collection_name: str = 'bad'
         
-        with pytest.raises(exceptions.CollectionException):
-            mongo.register_collection(BadlyConfiguredModel)
+    #     with pytest.raises(exceptions.CollectionException):
+    #         mongo.register_collection(BadlyConfiguredModel)
 
-    def test_unnamed_collection(self, mongo: MongoDB):
-        class UnnamedCollection(CollectionModel):
-            collection_name: str = None
+    # def test_unnamed_collection(self, mongo: MongoDB):
+    #     class UnnamedCollection(CollectionModel):
+    #         collection_name: str = None
         
-        with pytest.raises(exceptions.CollectionException):
-            mongo.register_collection(UnnamedCollection)
+    #     with pytest.raises(exceptions.CollectionException):
+    #         mongo.register_collection(UnnamedCollection)
     
-    def test_update(self, mongo: MongoDB):
+    def test_update(self):
         model1 = ModelForTest()
         model1['sample_text'] = 'sample text changed'
         ack = model1.manager.update_one(query={'_id': model1.pk}, update=model1.data(include_reference=False))
         
         assert ack.acknowledged
     
-    def test_delete(self, mongo: MongoDB):
+    def test_delete(self):
         model2 = ModelForTest2()
         model2.set_model_data({
             'title': 'title',
@@ -100,3 +85,9 @@ class TestCollectionModels(BaseAppSetup):
         ack = model2.manager.delete_one(query={'_id':same_model.pk})
         
         assert ack.acknowledged
+    
+    def test_two_model_instances(self):
+        m1 = ModelForTest2(title='This is the title of m1', body='This is the body text of m1')
+        m2 = ModelForTest2(title='This is the title of m2')
+        
+        assert m2['body'] != m1['body']

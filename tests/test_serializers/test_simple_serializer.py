@@ -21,7 +21,7 @@ class Serializer1(serializers.Serializer):
     address = fields.JSONField(AddressSerializer)
 
 
-class TestSerializer(BaseAppSetup):
+class TestSerializer:
     def test_serializer_is_valid(self):
         data = {
             'first_name': 'John',

@@ -48,7 +48,7 @@ def test_mongo_connection_sucessful(app: Flask):
         'DATABASE': {
             'main': {
                 'HOST': 'localhost',
-                'PORT': 27017,
+                'PORT': 27018,
                 'NAME': DB_NAME
             }
         }
