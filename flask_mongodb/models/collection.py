@@ -1,9 +1,8 @@
 import typing as t
 from copy import deepcopy
-from pymongo.errors import OperationFailure
 
-from flask_mongodb.core.exceptions import CollectionException, FieldError, MustRunStartDBCommand
-from flask_mongodb.core.wrappers import MongoCollection, MongoDatabase
+from flask_mongodb.core.exceptions import CollectionException, FieldError
+from flask_mongodb.core.wrappers import MongoCollection
 from flask_mongodb.models.fields import (EmbeddedDocumentField, EnumField,
                                          ObjectIdField, ReferenceIdField,
                                          StructuredArrayField)
@@ -35,7 +34,8 @@ class BaseCollection:
             if not name.startswith('_'):
                 attr = getattr(self, name)
                 if hasattr(attr, '_model_field'):
-                    self._fields[name] = attr
+                    # Copy the field
+                    self._fields[name] = deepcopy(attr)
                     if hasattr(attr, '_reference'):
                         attr: ReferenceIdField
                         related_name = attr.related_name
