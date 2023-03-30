@@ -13,7 +13,7 @@ class BaseAppSetup:
         'DATABASE': {
             MAIN: {
                 'HOST': 'localhost',
-                'PORT': 27018,
+                'PORT': 27017,
                 'NAME': DB_NAME
             }
         }
