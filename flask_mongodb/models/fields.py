@@ -286,8 +286,9 @@ class EmbeddedDocumentField(Field):
     def _set_properties_data(self, data: dict):
         props = self.properties
         for prop_name, prop_field in props.items():
-            value = data[prop_name]
-            prop_field.data = value
+            value = data.get(prop_name, None)
+            if value is not None:
+                prop_field.data = value
     
     def get_data(self) -> t.Union[t.Dict, None]:
         if self._check_if_allow_null(self.__data__):
