@@ -41,7 +41,7 @@ class URIMissing(BaseFlaskMongodbException):
 
 
 class DatabaseException(BaseFlaskMongodbException):
-    default_message = "Database name variable missing"
+    default_message = "Some database error happened"
 
 
 class DatabaseAliasException(BaseFlaskMongodbException):
@@ -99,3 +99,7 @@ class CollectionHasNoData(BaseFlaskMongodbException):
 class MustRunStartDBCommand(BaseFlaskMongodbException):
     default_message: str = 'Before starting the application, run `flask-mongodb shift start-db`'\
         'command'
+
+
+class ImproperConfiguration(BaseFlaskMongodbException):
+    default_message = 'App has been imporoperly configured'

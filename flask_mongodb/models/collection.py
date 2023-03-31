@@ -1,5 +1,9 @@
 import typing as t
+import logging
+
 from copy import deepcopy
+
+from bson import ObjectId
 
 from flask_mongodb.core.exceptions import CollectionException, FieldError
 from flask_mongodb.core.wrappers import MongoCollection
@@ -7,6 +11,9 @@ from flask_mongodb.models.fields import (EmbeddedDocumentField, EnumField,
                                          ObjectIdField, ReferenceIdField,
                                          StructuredArrayField)
 from flask_mongodb.models.manager import CollectionManager, ReferencenManager
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 
 class BaseCollection:
@@ -360,11 +367,15 @@ class CollectionModel(BaseCollection):
                     field.data = id_field_of_ref
     
     def data(self, as_str=False, exclude=(), include_reference=True, include_all_references=False):
+        """DEPRECATED; This method will be remove in version 2"""
+        
+        logger.warning('DEPRECATED: The `data` method is deprecated and will be removed in version 2')
         _data = {}
         for name, field in self.fields.items():
             if name in exclude:
                 # Go to next field
                 continue
+            
             if isinstance(field, EmbeddedDocumentField):
                 _data[name] = {}
                 for prop_name, prop_field in field.properties.items():

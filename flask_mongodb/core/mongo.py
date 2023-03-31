@@ -1,15 +1,19 @@
 import typing as t
+import logging
 
 from flask import Flask
+from pymongo.errors import ServerSelectionTimeoutError
 from werkzeug.utils import import_string
 
 from flask_mongodb.about import VERSION
 from flask_mongodb.core.exceptions import (CollectionInvalid, CouldNotRegisterCollection, 
-                                           DatabaseAliasException, DatabaseException, InvalidClass, 
-                                           URIMissing)
+                                           DatabaseAliasException, DatabaseException, ImproperConfiguration, InvalidClass)
 from flask_mongodb.core.wrappers import MongoConnect, MongoDatabase
 from flask_mongodb.models import CollectionModel
 from flask_mongodb.models.shitfs.hisotry import create_db_shift_hisotry
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 
 class MongoDB:
@@ -32,7 +36,7 @@ class MongoDB:
         
         database = app.config['DATABASE']
         if 'main' not in database:
-            raise DatabaseException('Must identify main database')
+            raise ImproperConfiguration('Must identify main database')
         
         for db_alias, db_details in database.items():
             assert isinstance(db_details, dict)
@@ -43,15 +47,21 @@ class MongoDB:
             db_name = db_details.get('NAME')
             
             if not host or not port:
-                raise URIMissing('HOST and PORT must be specified')
+                raise ImproperConfiguration('HOST and PORT must be specified')
 
             if not db_name:
-                raise DatabaseException()
+                raise ImproperConfiguration("Database name variable missing")
             
             account = f'{username}:{password}@' if username and password else ''
             conn = f'{host}:{port}'
             uri = f'mongodb://{account}{conn}'
-            alias_client = MongoConnect(uri)
+            
+            try:
+                alias_client = MongoConnect(uri)
+                alias_client.server_info()  # This is to test the connection
+            except ServerSelectionTimeoutError:
+                raise DatabaseException('No valid database connection estbalished')
+            
             db = MongoDatabase(alias_client, db_name)
             db.alias = db_alias
             self.__connections[db_alias] = db
@@ -79,7 +89,7 @@ class MongoDB:
     
     def _get_model_list(self, app: Flask) -> list:
         if not app.config['MODELS']:
-            return None
+            raise ImproperConfiguration('Need to list the model groups')
         models_list = []
         
         # Prepare a list of modules with their models
@@ -172,6 +182,8 @@ class MongoDB:
         return self.__connections
     
     def register_models(self):
+        logger.warning("DEPRECATED: register_models method is deprecated and will be " \
+            "removed in version 2")
         from flask import current_app
         self._automatic_model_registration(current_app)
 
@@ -181,6 +193,9 @@ class MongoDB:
         
         Collection is a user-defined collection that will be added to the MongoFlask instance
         """
+        logger.warning('DEPRECATED: register_collection model is a deprecated method that will be '\
+            'removed in version 2')
+        
         if issubclass(collection_cls, CollectionModel):
             return self.__register_collection(collection_cls)
         else:
@@ -194,6 +209,9 @@ class MongoDB:
         :param collection_name: Name of the collection to be retrieved
         :type collection_name: str
         """
+        logger.warning('register_collection model is a deprecated method that will be '\
+            'removed in version 2')
+        
         collection_name = collection.collection_name
         if not isinstance(collection_name, str):
             raise CollectionInvalid('Must pass a collection or collection name')
