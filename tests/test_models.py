@@ -8,7 +8,7 @@ from flask_mongodb.models import CollectionModel
 from flask_mongodb.models.document_set import DocumentSet
 from tests.fixtures import BaseAppSetup
 
-from tests.model_for_tests.core.models import ModelForTest, ModelForTest2
+from tests.model_for_tests.core.models import ModelForTest, ModelForTest2, ModelWithEmbeddedDocument
 from tests.utils import MAIN, remove_collections
 
 
@@ -91,3 +91,8 @@ class TestCollectionModels(BaseAppSetup):
         m2 = ModelForTest2(title='This is the title of m2')
         
         assert m2['body'] != m1['body']
+    
+    def test_embedded_document_default_values(self):
+        m = ModelWithEmbeddedDocument(phone_number={'number': '7559991122'})
+        
+        assert m['phone_number']['confirmed'] == False
