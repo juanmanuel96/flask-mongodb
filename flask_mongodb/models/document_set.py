@@ -29,17 +29,17 @@ class DocumentSet(InimitableObject):
     __next__ = next
     
     def first(self):
-        doc = list(self.__cursor.clone().limit(-1))[0]
+        doc = list(self.__cursor.clone().limit(-1))
         if not doc:
             return None
-        m = self._model_representation(doc)
+        m = self._model_representation(doc[0])
         return m
     
     def last(self):
-        doc = list(self.__cursor.clone())[-1]
+        doc = list(self.__cursor.clone())
         if not doc:
             return None
-        m = self._model_representation(doc)
+        m = self._model_representation(doc[-1])
         return m
     
     def limit(self, number):
