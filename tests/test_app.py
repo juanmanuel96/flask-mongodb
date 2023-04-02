@@ -1,11 +1,12 @@
 import pytest
 from flask import Flask
 
-from flask_mongodb.core.exceptions import DatabaseException
+from flask_mongodb.core.exceptions import DatabaseException, ImproperConfiguration
 from flask_mongodb.core.mongo import MongoDB
 from flask_mongodb.core.wrappers import MongoConnect
 from tests.utils import MAIN, DB_NAME
 
+# TODO: These tests need to be updated or removed since the MODELS attribute is always required
 
 @pytest.fixture(scope='module')
 def app():
@@ -20,6 +21,7 @@ def app():
                 }
             }
         }
+    
     mongo = MongoDB(_app)
     
     yield _app
@@ -35,7 +37,7 @@ def test_mongo_connection_fails(app: Flask):
     }
     app.config.update(config)
     
-    with pytest.raises(DatabaseException):
+    with pytest.raises(ImproperConfiguration()):
         MongoDB(app)
 
 

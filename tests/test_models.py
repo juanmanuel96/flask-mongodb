@@ -96,3 +96,8 @@ class TestCollectionModels(BaseAppSetup):
         m = ModelWithEmbeddedDocument(phone_number={'number': '7559991122'})
         
         assert m['phone_number']['confirmed'] == False
+    
+    def test_find_one(self):
+        m = ModelWithEmbeddedDocument().manager.find_one(**{'phone_number.number': "7664328912"})
+        
+        assert m == None
