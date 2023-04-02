@@ -339,13 +339,7 @@ class CollectionModel(BaseCollection):
             setattr(self, name, field)
         
         if self._initial:
-            "Assign the respective field their data, even if the field does not exist"
-            for name, data in self._initial.items():
-                field = self._fields.get(name, None)
-                if field is None:
-                    # If field name not part of collection, ignore it
-                    continue
-                field.data = data
+            self.__assign_data_to_fields__()
         
         self.schema_validators = None
     

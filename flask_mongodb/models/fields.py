@@ -360,7 +360,8 @@ class EnumField(Field):
         if self._check_if_allow_null(value):
             if (value not in self.enum):
                 raise InvalidChoice("Not a valid choice")
-        return super().validate_data(value)
+        value = super().validate_data(value)
+        return value.pk if hasattr(value, '_is_model') else value
 
 
 class ReferenceIdField(Field):
@@ -377,16 +378,17 @@ class ReferenceIdField(Field):
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
             if not any([
-                isinstance(value, valid) for valid in [str, ObjectId]
+                isinstance(value, valid) or hasattr(value, '_is_model') \
+                    for valid in [str, ObjectId]
                 ]):
                 raise TypeError("ObjectIDField data can only be "
-                                "str or ObjectID")
+                                "str, ObjectID, or CollectionModel")
         return super().validate_data(value)
     
-    def get_data(self) -> t.Union[str, ObjectId]:
+    def get_data(self) -> ObjectId:
         return super().get_data()
     
-    def set_data(self, value: t.Union[str, ObjectId]) -> None:
+    def set_data(self, value) -> None:
         valid_data = self.validate_data(value)
         if isinstance(valid_data, str):
             # If it's a string, convert to ObjectId
