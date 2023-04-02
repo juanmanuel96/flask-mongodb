@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from wtforms import fields as wtfields
 
@@ -19,6 +21,7 @@ class Serializer1(serializers.Serializer):
     first_name = wtfields.StringField(validators=[validators.required()])
     last_name = wtfields.StringField(validators=[validators.required()])
     address = fields.JSONField(AddressSerializer)
+    created = wtfields.DateTimeField(validators=[validators.required()])
 
 
 class TestSerializer:
@@ -31,11 +34,28 @@ class TestSerializer:
                 'city': 'San Juan',
                 'state': 'PR',
                 'country': 'US'
-            }
+            },
+            'created': datetime.now()
         }
         serializer = Serializer1(data=data)
         valid = serializer.is_valid()
         assert valid
+    
+    def test_serializer_data_is_native(self):
+        data = {
+            'first_name': 'John',
+            'last_name': 'Doe',
+            'address': {
+                'line1': 'Carr. 1',
+                'city': 'San Juan',
+                'state': 'PR',
+                'country': 'US'
+            },
+            'created': datetime.now()
+        }
+        serializer = Serializer1(data=data)
+        serializer.is_valid()
+        assert isinstance(serializer.validated_data['created'], datetime)
     
     def test_serializer_raise_validation_error(self):
         data = {

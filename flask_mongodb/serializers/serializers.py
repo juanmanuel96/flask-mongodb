@@ -3,6 +3,7 @@ import itertools
 
 from wtforms.form import BaseForm, FormMeta
 from wtforms.fields import Field
+from wtforms.utils import unset_value
 
 from flask_mongodb.core.exceptions import ValidationError
 from flask_mongodb.core.mixins import ModelMixin
@@ -60,10 +61,31 @@ class SerializerBase(BaseForm):
             raise NotImplementedError('CSRF Token field is called but not created')
         return self._csrf_token_field
 
+    def process(self, obj=None, data=None, extra_filters=None, **kwargs):
+        kwargs = dict(data, **kwargs)
+
+        filters = extra_filters.copy() if extra_filters is not None else {}
+
+        for name, field in self._fields.items():
+            field_extra_filters = filters.get(name, [])
+
+            inline_filter = getattr(self, "filter_%s" % name, None)
+            if inline_filter is not None:
+                field_extra_filters.append(inline_filter)
+
+            if obj is not None and hasattr(obj, name):
+                data = getattr(obj, name)
+            elif name in kwargs:
+                data = kwargs[name]
+            else:
+                data = unset_value
+
+            field.process(None, data, extra_filters=field_extra_filters)
+
 class Serializer(SerializerBase, metaclass=FormMeta):
     Meta = SerializerMeta
 
-    def __init__(self, data=None, formdata=None, obj=None, prefix="", meta=None, **kwargs):
+    def __init__(self, data=None, prefix="", meta=None, **kwargs):
         """
         :param data: Take existing data from keys in this dict matching
             form field attributes. ``obj`` takes precedence if it also
@@ -91,8 +113,6 @@ class Serializer(SerializerBase, metaclass=FormMeta):
             data as parameters. Overwrites any duplicate keys in
             ``data``. Only used if ``formdata`` is not passed.
         """
-        if formdata and data:
-            raise ValueError('Only data or formdata can be passed, not both')
         self.__validated__ = False
         self._validated_data = {}
         
@@ -105,7 +125,7 @@ class Serializer(SerializerBase, metaclass=FormMeta):
             # Set all the fields to attributes so that they obscure the class
             # attributes with the same names.
             setattr(self, name, field)
-        self.process(formdata, obj, data=data, **kwargs)
+        self.process(data=data, **kwargs)
 
     def is_valid(self, raise_exception=False):
         errors = {'errors': []}
