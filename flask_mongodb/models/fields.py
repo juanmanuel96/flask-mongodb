@@ -9,7 +9,14 @@ from werkzeug.security import generate_password_hash
 from flask_mongodb.core.exceptions import FieldError, InvalidChoice
 
 class emptyfield:
-    pass
+    def set(self, *args, **kwargs):
+        pass
+    
+    def get(self, *args, **kwargs):
+        return None
+    
+    def __call__(self, *args: t.Any, **kwds: t.Any) -> t.Any:
+        return self.get()
 
 
 class FieldMixin:
@@ -20,7 +27,7 @@ class Field(FieldMixin):
     bson_type: list = None
     _validator_description = None
 
-    def __init__(self, required: bool = True, allow_null=False, default: t.Union[t.Any, t.Callable]=emptyfield, 
+    def __init__(self, required: bool = True, allow_null=False, default: t.Union[t.Any, t.Callable]=emptyfield(), 
                  clean_data_func=None) -> None:
         """
         Simple Field class for inheritance by other field types
@@ -30,7 +37,7 @@ class Field(FieldMixin):
         self.clean_data_func = clean_data_func
         self.required = required
         self.allow_null = allow_null
-        self.__data__ = None
+        self.__data__ = emptyfield()
         self._validated = False
         
         if not isinstance(default, emptyfield):
@@ -41,6 +48,8 @@ class Field(FieldMixin):
 
     @property
     def data(self) -> t.Any:
+        if isinstance(self.__data__, emptyfield):
+            return self.__data__.get()
         if self._iscallable(self.__data__):
             return self.__data__()
         return self.get_data()
@@ -99,7 +108,7 @@ class Field(FieldMixin):
         return self.data
     
     def clear(self):
-        self.__data__ = None
+        self.__data__ = emptyfield()
 
 
 class ObjectIdField(Field):
@@ -249,20 +258,15 @@ class EmbeddedDocumentField(Field):
     _validator_descriptor = 'Values must match the embedded document requirements'
 
     def __init__(self, properties: t.Dict = None, required=True,
-                 allow_null=False, default=emptyfield, **kwargs) -> None:
+                 allow_null=False, **kwargs) -> None:
         """
         data = {'field1': 'value1', 'field2': 'value2'}
         """
         if not properties or not isinstance(properties, dict):
             raise TypeError('properties param must be a dictionary')
         
+        super().__init__(required=required, allow_null=allow_null, **kwargs)
         self.properties: t.Dict[str, Field] = self.__define_properties__(properties)
-        if not isinstance(default, emptyfield):
-            if self._iscallable(default):
-                default = default()
-            self._set_properties_data(default)
-        super().__init__(required=required, allow_null=allow_null, default=default,
-                         **kwargs)
 
     def __define_properties__(self, properties: t.Dict) -> t.Dict:
         json_field_properties = {}
@@ -291,22 +295,11 @@ class EmbeddedDocumentField(Field):
             if value is not None:
                 prop_field.data = value
     
-    def get_data(self) -> t.Union[t.Dict, None]:
-        if self._check_if_allow_null(self.__data__):
-            return self.__data__
-        json_field_data = {}
-        for name, field in self.properties.items():
-            json_field_data.update({name: field.data})
-        self.__data__ = json_field_data
-        return self.__data__
-    
     def set_data(self, value: t.Union[dict, None]):
         self.validate_data(value)
-        if self._check_if_allow_null(value):
-            self.__data__ = value
-        else:
-            assert isinstance(value, dict)
-            self._set_properties_data(value)
+        assert isinstance(value, dict)
+        self._set_properties_data(value)
+        self.__data__ = {name: field.data for name, field in self.properties.items()}
     
     def __iter__(self):
         return iter(self.data.keys() or [])
