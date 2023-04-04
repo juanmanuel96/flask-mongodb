@@ -1,6 +1,8 @@
-from copy import deepcopy
+import sys
 import traceback
-import click 
+import typing as t
+from copy import deepcopy
+
 from flask import Flask
 from pymongo.errors import OperationFailure
 from werkzeug.utils import import_string
@@ -10,8 +12,6 @@ from flask_mongodb.core.exceptions import CouldNotRegisterCollection, FieldError
 from flask_mongodb.core.wrappers import MongoCollection
 from flask_mongodb.models.collection import CollectionModel
 from flask_mongodb.models.fields import EmbeddedDocumentField, EnumField, ReferenceIdField, StructuredArrayField
-
-echo = click.echo
 
 def _enum_field_validators(field):
     if field.bson_type is not None:
@@ -204,10 +204,11 @@ def create_collection(mongo: MongoDB, collection_cls: CollectionModel):
         MongoCollection(database, _instance.collection_name, create=True, 
                         validator=schema_validators,
                         validationLevel=_instance.validation_level if not _instance.schemaless else None)
-    except OperationFailure:
-        # If collection exists, use that collection
-        traceback.print_exc()  # For information purposes
-        raise CouldNotRegisterCollection()
+    except OperationFailure as exc:
+        if exc.code == 48:  # Collection exists
+            raise CouldNotRegisterCollection('Collection already exists')
+        traceback.print_exc()  # For information purposes if something else happens
+        sys.exit(1)  # Stop execution
 
 
 def start_database(mongo: MongoDB, app: Flask, database='all'):
@@ -243,3 +244,38 @@ def start_database(mongo: MongoDB, app: Flask, database='all'):
                 elif obj.db_alias == database:
                     create_collection(mongo, obj)
                 created_collections.append(obj.collection_name)
+
+
+def add_new_collection(mongo: MongoDB, app: Flask, database):
+    if not app.config['MODELS']:
+        return None
+    models_list = []
+    collections_added: t.List[str] = []
+    
+    # Prepare a list of modules with their models
+    for mod in app.config['MODELS']:
+        mod = mod + '.models'
+        models = import_string(mod)
+        models_list.append(models)
+    
+    # Itereate over the list and create the new collections
+    for m in models_list:
+        module_contents = dir(m)
+        for cont in module_contents:
+            obj = getattr(m, cont)
+            if hasattr(obj, 'collection_name') and hasattr(obj, 'db_alias'):
+                if obj.collection_name is None:
+                    # When the collection name is None, it is the base model class
+                    continue
+                try:
+                    create_collection(mongo, obj)
+                    collections_added.append(obj.collection_name)
+                except CouldNotRegisterCollection:
+                    continue
+    
+    if collections_added:
+        shift_model = mongo.collections[database]['shift_history']
+        shift_model.set_model_data({
+            'db_collection': 'Added collections: ' + ', '.join(collections_added)
+        })
+        shift_model.manager.insert_one(shift_model.data())

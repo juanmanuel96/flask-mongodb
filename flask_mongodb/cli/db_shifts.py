@@ -3,7 +3,7 @@ import click
 import flask.cli
 
 from flask_mongodb.models.shitfs import Shift, create_db_shift_hisotry
-from .utils import create_collection, echo, start_database
+from .utils import add_new_collection, create_collection, echo, start_database
 
 
 @click.group('shift', help='Shift the database to make changes')
@@ -114,3 +114,25 @@ def start(all, database: str, path: str):
         start_database(current_mongo, current_app, database)
         HistoryModel = create_db_shift_hisotry(database)
         create_collection(current_mongo, HistoryModel)
+    
+    click.echo('Database creation complete')
+
+
+@db_shift.command('add-collections', help='Add new collections to the database')
+@click.option('-database', '-d', default='main', help='Database to run the addition on')
+@flask.cli.with_appcontext
+def add_collections(database):
+    from flask import current_app
+    from flask_mongodb import current_mongo
+    
+    try:
+        db = current_mongo.connections[database]
+    except KeyError:
+        click.echo('')
+    
+    if not db.client.list_database_names():
+        click.echo('Run the start-db command first')
+        return
+    
+    add_new_collection(current_mongo, current_app, database)
+    click.echo('Addition of collection complete')

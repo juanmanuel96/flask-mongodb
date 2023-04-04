@@ -21,7 +21,7 @@ def show_version(ctx, param ,value):
 
 
 version_options = click.Option(
-    ['--version'],
+    ['--version', '-v'],
     is_flag=True,
     callback=show_version,
     help='Show package version'
