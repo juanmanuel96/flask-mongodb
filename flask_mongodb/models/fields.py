@@ -122,10 +122,10 @@ class ObjectIdField(Field):
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
             if not any([
-                isinstance(value, valid) for valid in [str, ObjectId]
+                isinstance(value, valid) or hasattr(value, '_is_model') for valid in [str, ObjectId]
                 ]):
                 raise TypeError("ObjectIDField data can only be "
-                                "str or ObjectID")
+                                "str, ObjectID, or a model")
         return super().validate_data(value)
 
     def set_data(self, value: t.Any) -> None:
@@ -133,6 +133,8 @@ class ObjectIdField(Field):
         if isinstance(valid_data, str):
             # If it is a string, convert to ObjectId
             valid_data = ObjectId(valid_data)
+        if hasattr(valid_data, '_is_model'):
+            valid_data = valid_data.pk
         self.__data__ = valid_data
 
 
