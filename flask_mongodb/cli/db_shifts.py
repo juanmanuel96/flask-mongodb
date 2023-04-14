@@ -1,9 +1,9 @@
-from email.policy import default
 import click
 import flask.cli
+from click import echo
 
 from flask_mongodb.models.shitfs import Shift, create_db_shift_hisotry
-from .utils import add_new_collection, create_collection, echo, start_database
+from .utils import add_new_collection, create_collection, start_database
 
 
 @click.group('shift', help='Shift the database to make changes')
