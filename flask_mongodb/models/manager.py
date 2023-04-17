@@ -49,28 +49,28 @@ class BaseManager(InimitableObject):
         model = docuset.first()
         return model
     
-    # Create, Update, Delete (CUD) operations    
-    def insert_one(self, insert_data, **options) -> InsertOneResult:
-        assert isinstance(insert_data, dict)
-        
-        data = {}
-        
-        insert_data.pop('_id', None)
-        for key in insert_data.keys():
-            attr = getattr(self._model, key, None)
-            if hasattr(attr, '_reference'):
-                data[f'{key}_id'] = attr.data
-            else:
-                if key in data:
-                    # Do not overwrite anything
+    # Create, Update, Delete (CUD) operations
+    def insert_one(self, insert_data: t.Union[None, t.Dict] = None, **options) -> InsertOneResult:
+        from flask_mongodb import CollectionModel
+        self._model: CollectionModel
+
+        if insert_data:
+            insert_data.pop('_id', None)
+            for key, value in insert_data.items():
+                field = getattr(self._model, key, None)
+                if field is None or not hasattr(field, '_model_field'):
                     continue
-                data[key] = attr.data
-        ack = self._model.collection.insert_one(data, **options)
+                field.data = value
+            
+        insert = self._model.data(exclude=('_id',), include_reference=False)
+        ack = self._model.collection.insert_one(insert, **options)
+        self._model.pk = ack.inserted_id
         return ack
     
     def update_one(self, query, update, update_type='$set', **options) -> UpdateResult:
         assert isinstance(query, dict)
         assert isinstance(update, dict)
+        
         query = self._clean_query(**query)
         update = self._clean_query(**update)
         update = {update_type: update}

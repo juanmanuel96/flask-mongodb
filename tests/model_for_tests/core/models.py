@@ -1,4 +1,4 @@
-from attr import field
+from datetime import datetime
 from flask_mongodb.models import CollectionModel, fields
 
 
@@ -11,6 +11,14 @@ class ModelForTest2(CollectionModel):
     collection_name: str = 'testing2'
     title = fields.StringField(required=True, max_length=50)
     body = fields.StringField(required=True)
+
+
+class ModelWithDefaultValues(CollectionModel):
+    collection_name = 'model_with_default_values'
+    
+    string_field = fields.StringField(default='Default string value')
+    insert_date = fields.DatetimeField(default=datetime.now)
+    boolean_field = fields.BooleanField(default=False)
 
 
 class ModelWithEmbeddedDocument(CollectionModel):

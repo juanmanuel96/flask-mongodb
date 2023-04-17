@@ -303,6 +303,10 @@ class BaseCollection:
     def pk(self):
         return self._id.data
     
+    @pk.setter
+    def pk(self, value):
+        self._id.data = value
+    
     def get_collection_schema(self):
         return self.__define_validators__()
     
