@@ -25,23 +25,32 @@ APP_CONFIG = {
 }
 
 
-def test_db_creation():
-    app = Flask(__name__)
-    app.config.update(APP_CONFIG)
-    mongo = MongoDB(app)
-    runner = CliRunner()
+@pytest.fixture(scope='function')
+def app():
+    _app = Flask(__name__)
+    _app.config.update(APP_CONFIG)
+    mongo = MongoDB(_app)
     
-    with app.app_context():
-        result = runner.invoke(db_shift, ['start-db'])
-        res = result.output.replace('\n', '') ==  'Database creation complete'
+    yield _app
     
     client: MongoConnect = mongo.connections[MAIN].client
     client.drop_database(NAME)
     client.close()
-    
+
+
+
+def test_db_creation(app: Flask):
+    runner = CliRunner()
+    with app.app_context():
+        result = runner.invoke(db_shift, ['start-db'])
+        res = result.output.replace('\n', '') ==  'Database creation complete'
     assert res
 
 
-def test_shift_history():
-    pass
+def test_shift_history(app: Flask):
+    runner = CliRunner()
+    with app.app_context():
+        result = runner.invoke(db_shift, ['examine'])
+        res = result.exit_code == 0
+    assert res
 

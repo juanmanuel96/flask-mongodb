@@ -2,17 +2,13 @@ import pytest
 from flask import Flask
 from pymongo.errors import WriteError
 
-from flask_mongodb import MongoDB, exceptions
-from flask_mongodb.core.wrappers import MongoConnect
-from flask_mongodb.models import CollectionModel
 from flask_mongodb.models.document_set import DocumentSet
 from tests.fixtures import BaseAppSetup
 
 from tests.model_for_tests.core.models import ModelForTest, ModelForTest2, ModelWithDefaultValues, ModelWithEmbeddedDocument
-from tests.utils import MAIN, remove_collections
 
 
-class TestCollectionModels(BaseAppSetup):
+class TestModelInstance(BaseAppSetup):
     MODELS = ['tests.model_for_tests.core']
     
     def test_two_model_instances(self):
@@ -25,7 +21,17 @@ class TestCollectionModels(BaseAppSetup):
         m = ModelWithEmbeddedDocument(phone_number={'number': '7559991122'})
         assert m['phone_number']['confirmed'] == False
     
-    def test_find_one(self):
+    def test_embedded_document_change(self):
+        m = ModelWithEmbeddedDocument(phone_number={'number': '7559991122'})
+        number = m['phone_number']['number']
+        m['phone_number']['number'] = '88833399922'
+        
+        assert number != m['phone_number']['number']
+
+class TestModelOperations(BaseAppSetup):
+    MODELS = ['tests.model_for_tests.core']
+    
+    def test_find_one_that_does_not_exist(self):
         m = ModelWithEmbeddedDocument().manager.find_one(**{'phone_number.number': "7664328912"})
         assert m == None
     
@@ -37,28 +43,28 @@ class TestCollectionModels(BaseAppSetup):
         ack = ModelWithDefaultValues().manager.insert_one({'string_field': 'My name is...'})
         assert ack.acknowledged
 
-    def test_getting_data_from_db(self, mongo: MongoDB):
+    def test_manager_operation_return_data_type(self):
         model = ModelForTest()
         ds = model.manager.find()
         
         assert isinstance(ds, DocumentSet), \
             'find() should return a DocumentSet'
 
-    def test_document_set_elemets_are_models(self, mongo: MongoDB):
+    def test_document_set_elemets_are_models(self):
         model = ModelForTest()
         ds = model.manager.find()
         
         assert all([isinstance(item, ModelForTest) for item in ds]), \
             'All instaces must be of the ModelForTest'
 
-    def test_inimitable_object(self, mongo: MongoDB):
+    def test_inimitable_object(self):
         model = ModelWithDefaultValues()
         instance: ModelForTest = model.manager.find().first()
         
         assert instance.collection is None, \
             "It seems that the collection was imitated"
 
-    def test_required_field(self, mongo: MongoDB):
+    def test_required_field(self):
         model = ModelForTest2()
         model['body'] = 'This is the body'
         
