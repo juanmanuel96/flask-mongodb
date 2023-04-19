@@ -18,6 +18,6 @@ def get_version(version_info: t.Tuple[int, int, int, str,  int]) -> str:
     if version_state.upper() == FINAL:
         return version
     if version_state.upper() == RELEASE_CANDIDATE:
-        return version + f'-{version_state}'
-    version += f'-{version_state}.{state_number}'
+        return version + f'-{version_state}{state_number}'
+    version += f'-{version_state}{state_number}'
     return version
