@@ -119,7 +119,7 @@ def start(all, database: str, path: str):
 
 
 @db_shift.command('add-collections', help='Add new collections to the database')
-@click.option('-database', '-d', default='main', help='Database to run the addition on')
+@click.option('--database', '-d', default='main', help='Database to run the addition on')
 @flask.cli.with_appcontext
 def add_collections(database):
     from flask import current_app
