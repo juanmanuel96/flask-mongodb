@@ -14,7 +14,7 @@ A model's fields are what define the schema of the collection. The schema of the
 
 ## Creating a model
 
-As explained in the previous section, the `MODELS` configuration searches for the models module inside the package path in the list. While this is not a requirement and you can use the `register_collection` method of the `MongoDB` class, the configuration method is the recommended option. This is because collection registration is done automatically by the package. 
+As explained in the previous section, the `MODELS` configuration searches for the models module inside the package path in the list. This configuration is a list of packages or locations where a `models.py` file or package exists.
 
 ### The CollectionModel
 
@@ -35,7 +35,7 @@ class BlogPost(CollectionModel):
 
 ### Defining Fields
 
-As mentioned above, the fields are why define the schema of a document in a collection (**Remember**: Collections in MongoDB are composed of documents where each document schema does not have to necessarilly match as the next one). Before we create a field in out example model, they must be explained first.
+As mentioned above, the fields are what define the schema of a document in a collection (**Remember**: Collections in MongoDB are composed of documents where each document schema does not have to necessarilly match as the next one). Before we create a field in out example model, they must be explained first.
 
 #### Structure of fields
 
@@ -67,7 +67,7 @@ class BlogPost(CollectionModel):
     body = fields.StringField(min_length=25, max_length=1000)
 ```
 
-This is all that is required to create a model. Add this model package to the `MODELS` config variable to register the collection.
+This is all that is required to create a model.
 
 ## Making queries
 
@@ -85,7 +85,7 @@ The `manager` attribute is an instance of the `CollectionManager` class. This cl
 
 ### ReferenceManager
 
-The ReferenceManager class...
+The ReferenceManager class is another manager, but for reverse references. A reverse reference is when Model A references Model B, with the reference manager Model B will have access to Model A data after instantiating the model. This manager only supports the `find` and `find_one` query methods.
 
 ### Document Sets
 

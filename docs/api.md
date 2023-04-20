@@ -76,7 +76,7 @@ _attr_ <span class="class_attr">manager_class</span>=<span class="class_attr">Co
 
 Manager class for the collection.
 
-_meth_<span class="class_attr">get_collection_schema</span>()
+_meth_ <span class="class_attr">get_collection_schema</span>()
 
 Get the collection schema in JSON format.
 
@@ -107,6 +107,8 @@ _class_ <span class="py_class">flask_mongodb.CollectionModel</span>(_\*\*field_v
 Inherits from BaseCollection. Base class for all your models to inherit from. Use keyword arguments to give initial values to your deseried fields.
 
 _meth_ <span class="class_attr">data</span>(_as_str=False, exclude=(), include_reference=True, include_all_references=False_)
+
+**Deprecated**
 
 Returns a dict-like representation of the model fields and its values.
 
@@ -220,7 +222,7 @@ This method is the same as running the `find` method without any filters.
 
 Get the first document found by the filter. Returns in model representation of the document.as
 
-<span class="class_attr">insert_one</span>(_insert_data, **options_)
+<span class="class_attr">insert_one</span>(_insert_data=None, **options_)
 
 Insert a single document into the database. With the `options` kwargs, you can pass pymongo and MongoDB optins to the pymongo counterpart method.
 

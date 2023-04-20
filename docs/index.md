@@ -1,6 +1,6 @@
 # Overview
 
-Flask-MongoDB is a Flask extension for connecting one or more MongoDB connections to a Flask instance. This extension also includes collection modelling classes, model view, serializers, and model serializers.
+Flask-MongoDB is a Flask extension for connecting one or more MongoDB databases to a Flask instance. This extension also includes collection model classes, model view, serializers, and model serializers.
 
 ## Installation
 
@@ -57,7 +57,7 @@ To connect your MongoDB instance to the Flask instance, you have two options:
 
 ### Starting the databae
 
-Before actually running the application, you must create the database (or databases) and its collections. Run the following command to create the databases of your application.
+Before actually running the application, you must create the database (or databases) and their collections. Run the following command to create the databases of your application.
 
 ```
 flask-mongodb shift start-db --all

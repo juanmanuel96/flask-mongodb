@@ -23,8 +23,8 @@ extra_css:
   - stylesheet/extra.css
 
 extra: 
-  pkg_version: v1.7.1
-  version: v1.7.x
+  pkg_version: v1.8.0
+  version: v1.8.x
 
 plugins:
   - search

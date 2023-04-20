@@ -20,19 +20,28 @@ This command will create a model file in the directory of your choosing. This co
 
 ### shift
 
-The shift command is used to generate database shift. In Flask-MongoDB database shifting is the concept of altering the database either by creating it or modifying an existing one. The CLI tool was born to satisfy this need of the package. This command cannot run alone on its own it has a set of subcommands that make the use of shifting possible.
+The shift CLI group is used to generate database shift. In Flask-MongoDB database shifting is the concept of altering the database either by creating it or modifying an existing one. The CLI tool was born to satisfy this need of the package. This command cannot run alone on its own it has a set of subcommands that make the use of shifting possible.
 
 #### start-db
 
 This command creates databases to be used by your application. It should be ran once the databases have been defined in the configurations of the application. Models do not have to be created before hand to create the database, it would be ideal but not necessary. The `start-db` command has an option for specifying a model to be created.
 
-Please note that with this package you can run your application without explicitly creating a database, but once you stop the application all data will be lost. This command must be ran whenerver a new model has been created.
+Please note that with this package you can run your application without explicitly creating a database, but once you stop the application all data will be lost. This command must be ran whenerver a new model group has been created.
 
 Options for this command:
 
 * --all, -a: Creates all databases, avoid having to run the command database by database
-* --database, -d: Specify the database alias to be started
+* --database, -d: Specify the database alias to be started, default is `main`
 * --path, -p: Model path with dot notation
+* --help: Display help information
+
+#### add-collections
+
+This command will add new collections to your database after your model group has been created. Say you have a model group called `api.blog` with a model called `BlogPosts` where the author is a StringField. Then you wish to move the author data to another model called `Author`. Adding this new model would require a tense workaround. With the `add-collections` command, you will only have to define your model run the command. This command will add all new models to the database. 
+
+Options for this command:
+
+* --database, -d: Specify the database to add the collections, default is `main`
 * --help: Display help information
 
 #### history
@@ -41,7 +50,7 @@ This command will go through the `shift_hisotry` collection of the database and 
 
 Options for this command:
 
-* --database, -d: Specify the database to see the shift history
+* --database, -d: Specify the database to see the shift history, default is `main`
 * --help: Display help information
 
 #### examine

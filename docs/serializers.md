@@ -7,7 +7,7 @@ Serializers are classes used to validate incoming data. It is implemented with W
 
 ## Serializer class
 
-This basic serializer class can work out of the application context. In escence it accepts some incomming data and applies the values to each of the defined fields. The, you run the `is_valid` method to validate each of the fields. If any errors happen, you can see each of the errors with the `errors` attribute, which is a list of the errors. 
+This basic serializer class can work outside of the application context. In escence it accepts some incomming data and applies the values to each of the defined fields. The, you run the `is_valid` method to validate each of the fields. If any errors happen, you can see each of the errors with the `errors` attribute, which is a list of the errors. 
 
 The incomming data can be a dictionary where the keys are the fields and the values the values of the fields. This type of data MUST be passed to the serializer on initialization with the `data` parameter or as the first parameter value. If you wish to use the `POST` attribute from the request proxy from Flask, you can use it as well. However, you need to specify the keyword argument `formdata`. Know that you cannot use `data` and `formdata` at the same time, a `ValueError` will be raised.
 
@@ -31,7 +31,9 @@ The JSONField class is a custom flask-mongodb field for implementing Serializers
 
 Once again you can use wtforms validators on your fields. There is a custom validator called `AllowNull` for when a field requires data but a null value is allowed. 
 
-When creating a custom validator in you Serializer class, use the same naming convention you would use in wtform. However, when raising an error, use the `ValidationError` class from `flask_mongodb.exceptions`, which is the type of exception the serializer is expecting.
+#### Validation
+
+When creating a custom validator in you Serializer class, use the same naming convention you would use in WTForms. If a validation error must be raised, use the `ValidationError` from WTForms.
 
 ## ModelSerializer class
 

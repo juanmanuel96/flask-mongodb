@@ -6,12 +6,24 @@ When a connection has been established, the Flask instance will have a new attri
 
 ## Configurations
 
-The MongoDB class has two configuration variables. These are `DATABASE` and `MODELS`. The first one tells the MongoDB instance which databases and connections to use. The `MODELS` configuration allows for easier model registration. It tells the instance where to look for those models.
+The MongoDB class has two configuration variables. These are `DATABASE` and `MODELS`. The first one tells the MongoDB instance which databases and connections to use. The `MODELS` configuration tells the instance where to look for those models. The elements of the list are refered to as model groups.
 
 ### Database settings
 
-As mentioned before, the database configuration has default values. This default value connects the Flask app to a database of name main in localhost on port 27017, where the database alias is main.
+As mentioned above, the database configuration has default values. This default value connects the Flask app to a database of name main in localhost on port 27017, where the database alias is main.
 
+**Structure**
+```python
+DATABASE = {
+    'DB alias': {
+        'HOST': 'host of the database',
+        'PORT': 'port of the database',
+        'NAME': 'name of the database'
+    }
+}
+```
+
+**Example**
 ```python
 DATABASE = {
     'main': {
@@ -30,15 +42,13 @@ It is recommended that in your configurations add a `DATABASE` variable to overw
 2. `PORT` - Port of the database (required)
 3. `NAME` - Name of the database in the connection (required)
 4. `USERNAME` - Username of the account to be used to conduct the DB operations (optional)
-5. `PASSWORD` - Password of the account (optional)
+5. `PASSWORD` - Password of the account, required if username is used (optional)
+
+These DB configurations needs to be repeated for all databases you wish to connect to the application. Make sure not to repeat aliases.
 
 ### Models configuration
 
-The `MODELS` configuration provides is the main method for registering models to the MongoDB instance automatically and easily. Another way of registering models is by doing it manually with the `register_collection` method of the MongoDB class. While it is very similar to Flask's `register_blueprint` method, it is not scalable. That is where the `MODELS` configurations comes in to play. This variable must be a list of strings.
-
-> **NOTE:** The `register_collection` method has been deprecated as of version 1.7.0. Rely on the `MODELS` configuration.
-
-To register models automatically, simply add to the list the package path to the models. For exmaple, if you have a project with the following structure:
+The `MODELS` configuration provides is the main method for registering models to the MongoDB instance automatically and easily. To register models automatically, simply add to the list the package path to the models. For exmaple, if you have a project with the following structure:
 
 ```
 api
@@ -57,7 +67,7 @@ api
         |__ ...
 ```
 
-You would want to register your authentication and store models automatically. In your configurations, create a new variable called MODELS. This variable must be a list. You should add `api.authentication` and `api.store` to the MODELS variable. Note that you do not add "models" to each of the package paths because the MongoDB instance will automatically search for `models` inside your packages. Your MODELS variable should look like this:
+You would want to register your authentication and store models automatically. In your configurations, create a new variable called MODELS. This variable must be a list. You should add `api.authentication` and `api.store` to the MODELS variable. Note that you do not add "models" to each of the package paths because the MongoDB instance will automatically search for `models` inside your packages. Your `MODELS` variable should look like this:
 
 ```python
 MODELS = [
@@ -66,7 +76,7 @@ MODELS = [
 ]
 ```
 
-If you were to install other packages with Flask-MongoDB models, you would add the path to those models in the MODELS variable as well. The models file can be treated as package or as a simple file with all of the models in it.
+If you were to install other packages with Flask-MongoDB models, you would add the path to those models in the `MODELS` configuration as well. The models file can be treated as package or as a simple file with all of the models in it.
 
 ## Using the MongoDB instance at runtime
 
@@ -83,7 +93,7 @@ Using the `current_app` proxy, you can access the instanced MongoDB object throu
 ```python
 from flask import current_app
 
-mongo_inst = current_app.mongo
+mongo = current_app.mongo
 ```
 
 #### Current mongo proxy
@@ -96,23 +106,4 @@ In your app initialization file, you have to initialize your MongoDB instance af
 
 ## Using models at runtime
 
-While developing your application, you will want to use the models. There are ways for you to get a model and use it during runtime. This section will explain all of the different methods for getting the models and using them.
-
-### Importing the model
-
-You can import any of your models as you would import any other class in Python. To use the model simply initialize it and you can do all sorts of DB operations or model oprations with it. 
-
-### The `get_collection` method
-
-Another way is using the method `get_collection` which is used to get a model registered model instance. This method has one required parameter. It must be the class type of the instance you wish to get. For example, let's say you have a `BlogPost` model and registered it automatically as explained above. To get the registered model instance, you would call the `get_collection` method from the MongoDB instance and pass the class `BlogPost` as parameters.
-
-```python
-from flask_mongodb import current_mongo
-from ..blog.models import BlogPost
-
-post_model = current_mongo.get_collection(BlogPost)
-```
-
-This will return the instance of `BlogPost` model which was registered automatically.
-
-> **NOTE:** As of verion 1.7.0, this method has been deprecated.
+While developing your application, you will want to use the models. You can import any of your models as you would import any other class in Python. To use the model, simply initialize it and you can do model oprations with it. 
