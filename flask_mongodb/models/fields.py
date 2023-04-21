@@ -8,6 +8,16 @@ from werkzeug.security import generate_password_hash
 
 from flask_mongodb.core.exceptions import FieldError, InvalidChoice
 
+class emptyfield:
+    def set(self, *args, **kwargs):
+        pass
+    
+    def get(self, *args, **kwargs):
+        return None
+    
+    def __call__(self, *args: t.Any, **kwds: t.Any) -> t.Any:
+        return self.get()
+
 
 class FieldMixin:
     _model_field = True
@@ -17,7 +27,7 @@ class Field(FieldMixin):
     bson_type: list = None
     _validator_description = None
 
-    def __init__(self, required: bool = True, allow_null=False, default: t.Union[t.Any, t.Callable]=None, 
+    def __init__(self, required: bool = True, allow_null=False, default: t.Union[t.Any, t.Callable]=emptyfield(), 
                  clean_data_func=None) -> None:
         """
         Simple Field class for inheritance by other field types
@@ -27,10 +37,10 @@ class Field(FieldMixin):
         self.clean_data_func = clean_data_func
         self.required = required
         self.allow_null = allow_null
-        self.__data__ = None
+        self.__data__ = emptyfield()
         self._validated = False
         
-        if default:
+        if not isinstance(default, emptyfield):
             if self._iscallable(default):
                 self.__data__ = default
             else:
@@ -38,6 +48,8 @@ class Field(FieldMixin):
 
     @property
     def data(self) -> t.Any:
+        if isinstance(self.__data__, emptyfield):
+            return self.__data__.get()
         if self._iscallable(self.__data__):
             return self.__data__()
         return self.get_data()
@@ -96,7 +108,7 @@ class Field(FieldMixin):
         return self.data
     
     def clear(self):
-        self.__data__ = None
+        self.__data__ = emptyfield()
 
 
 class ObjectIdField(Field):
@@ -110,10 +122,10 @@ class ObjectIdField(Field):
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
             if not any([
-                isinstance(value, valid) for valid in [str, ObjectId]
+                isinstance(value, valid) or hasattr(value, '_is_model') for valid in [str, ObjectId]
                 ]):
                 raise TypeError("ObjectIDField data can only be "
-                                "str or ObjectID")
+                                "str, ObjectID, or a model")
         return super().validate_data(value)
 
     def set_data(self, value: t.Any) -> None:
@@ -121,6 +133,8 @@ class ObjectIdField(Field):
         if isinstance(valid_data, str):
             # If it is a string, convert to ObjectId
             valid_data = ObjectId(valid_data)
+        if hasattr(valid_data, '_is_model'):
+            valid_data = valid_data.pk
         self.__data__ = valid_data
 
 
@@ -128,10 +142,10 @@ class StringField(Field):
     bson_type = ['string']
 
     def __init__(self, min_length=0, max_length=0, required=True, 
-                 allow_null=False, default='', **kwargs) -> None:
+                 allow_null=False, **kwargs) -> None:
         self.min_length = min_length
         self.max_length = max_length
-        super(StringField, self).__init__(required, allow_null, default, **kwargs)
+        super(StringField, self).__init__(required, allow_null, **kwargs)
 
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
@@ -153,8 +167,8 @@ class PasswordField(StringField):
 class IntegerField(Field):
     bson_type = ['int']
     
-    def __init__(self, required: bool = True, allow_null=False, default=0, **kwargs) -> None:
-        super().__init__(required, allow_null, default, **kwargs)
+    def __init__(self, required: bool = True, allow_null=False, **kwargs) -> None:
+        super().__init__(required, allow_null, **kwargs)
     
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
@@ -168,8 +182,8 @@ class IntegerField(Field):
 class FloatField(Field):
     bson_type = ['double']
     
-    def __init__(self, required: bool = True, allow_null=False, default=0.0, **kwargs) -> None:
-        super().__init__(required, allow_null, default, **kwargs)
+    def __init__(self, required: bool = True, allow_null=False, **kwargs) -> None:
+        super().__init__(required, allow_null, **kwargs)
     
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
@@ -183,8 +197,8 @@ class FloatField(Field):
 class BooleanField(Field):
     bson_type = ['bool']
 
-    def __init__(self, required=True, allow_null=False, default=False, **kwargs) -> None:
-        super(BooleanField, self).__init__(required, allow_null, default, **kwargs)
+    def __init__(self, required=True, allow_null=False, **kwargs) -> None:
+        super(BooleanField, self).__init__(required, allow_null, **kwargs)
 
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
@@ -196,11 +210,10 @@ class BooleanField(Field):
 class DateField(Field):
     bson_type = ['date']
     
-    def __init__(self, format='%Y-%m-%d', required: bool = True, allow_null=False, 
-                 default: t.Union[datetime, date, None]=datetime(1901, 1, 1, 0, 0, 0, 0),
+    def __init__(self, format='%Y-%m-%d', required: bool = True, allow_null=False,
                  **kwargs) -> None:
         self.format = format
-        super().__init__(required=required, allow_null=allow_null, default=default, **kwargs)
+        super().__init__(required=required, allow_null=allow_null, **kwargs)
     
     def validate_data(self, value: t.Union[str, datetime, date], fmt: str = None):
         fmt = self.format if not fmt else fmt
@@ -223,9 +236,8 @@ class DateField(Field):
 
 
 class DatetimeField(DateField):
-    def __init__(self, required: bool = True, allow_null=False, 
-                 default: t.Union[datetime, None] = datetime.now, **kwargs) -> None:
-        super().__init__(format=None, required=required, allow_null=allow_null, default=default,
+    def __init__(self, required: bool = True, allow_null=False, **kwargs) -> None:
+        super().__init__(format=None, required=required, allow_null=allow_null,
                          **kwargs)
     
     def set_data(self, value: t.Any) -> None:
@@ -248,20 +260,15 @@ class EmbeddedDocumentField(Field):
     _validator_descriptor = 'Values must match the embedded document requirements'
 
     def __init__(self, properties: t.Dict = None, required=True,
-                 allow_null=False, default: t.Union[t.Dict, t.Callable]={}, **kwargs) -> None:
+                 allow_null=False, **kwargs) -> None:
         """
         data = {'field1': 'value1', 'field2': 'value2'}
         """
         if not properties or not isinstance(properties, dict):
             raise TypeError('properties param must be a dictionary')
         
+        super().__init__(required=required, allow_null=allow_null, **kwargs)
         self.properties: t.Dict[str, Field] = self.__define_properties__(properties)
-        if default:
-            if self._iscallable(default):
-                default = default()
-            self._set_properties_data(default)
-        super().__init__(required=required, allow_null=allow_null, default=default,
-                         **kwargs)
 
     def __define_properties__(self, properties: t.Dict) -> t.Dict:
         json_field_properties = {}
@@ -286,25 +293,15 @@ class EmbeddedDocumentField(Field):
     def _set_properties_data(self, data: dict):
         props = self.properties
         for prop_name, prop_field in props.items():
-            value = data[prop_name]
-            prop_field.data = value
-    
-    def get_data(self) -> t.Union[t.Dict, None]:
-        if self._check_if_allow_null(self.__data__):
-            return self.__data__
-        json_field_data = {}
-        for name, field in self.properties.items():
-            json_field_data.update({name: field.data})
-        self.__data__ = json_field_data
-        return self.__data__
+            value = data.get(prop_name, None)
+            if value is not None:
+                prop_field.data = value
     
     def set_data(self, value: t.Union[dict, None]):
         self.validate_data(value)
-        if self._check_if_allow_null(value):
-            self.__data__ = value
-        else:
-            assert isinstance(value, dict)
-            self._set_properties_data(value)
+        assert isinstance(value, dict)
+        self._set_properties_data(value)
+        self.__data__ = {name: field.data for name, field in self.properties.items()}
     
     def __iter__(self):
         return iter(self.data.keys() or [])
@@ -314,13 +311,12 @@ class ArrayField(Field):
     bson_type = ['array']
     
     def __init__(self, required: bool = True, min_items: int = -1, max_items=-1,
-                 allow_null=False, default=[], **kwargs) -> None:
+                 allow_null=False, **kwargs) -> None:
         if min_items > 0:
             self.min_items = min_items
         if max_items > 0:
             self.max_items = max_items
-        super().__init__(required=required, allow_null=allow_null, default=default,
-                         **kwargs)
+        super().__init__(required=required, allow_null=allow_null, **kwargs)
     
     def validate_data(self, value):
         if self._check_if_allow_null(value):
@@ -335,13 +331,13 @@ class ArrayField(Field):
 class StructuredArrayField(ArrayField):
     _validator_descriptor = 'Items must match the desired structure'
     def __init__(self, items: dict[str, t.Type[Field]], required: bool = True, 
-                 max_items: int = -1, min_items=-1, allow_null=False, default=[], 
+                 max_items: int = -1, min_items=-1, allow_null=False, 
                  unique_items=False, **kwargs) -> None:
         if not isinstance(items, dict):
             raise TypeError('items param must be dictionary')
         self.items = items
         self.unique_items = unique_items
-        super().__init__(required, min_items, max_items, allow_null, default,
+        super().__init__(required, min_items, max_items, allow_null,
                          **kwargs)
 
 
@@ -350,7 +346,7 @@ class EnumField(Field):
     bson_type = None
     
     def __init__(self, required: bool = True, 
-                 choices: t.Tuple=None, allow_null=False, default='', 
+                 choices: t.Tuple=None, allow_null=False, 
                  expected_value_types=['string'], **kwargs) -> None:
         if not choices:
             raise FieldError('Must include choices')
@@ -360,14 +356,14 @@ class EnumField(Field):
         
         self.choices = choices
         self.enum = [choice[0] for choice in choices]
-        super().__init__(required=required, allow_null=allow_null, default=default,
-                         **kwargs)
+        super().__init__(required=required, allow_null=allow_null, **kwargs)
     
     def validate_data(self, value):
         if self._check_if_allow_null(value):
             if (value not in self.enum):
                 raise InvalidChoice("Not a valid choice")
-        return super().validate_data(value)
+        value = super().validate_data(value)
+        return value.pk if hasattr(value, '_is_model') else value
 
 
 class ReferenceIdField(Field):
@@ -375,25 +371,26 @@ class ReferenceIdField(Field):
     bson_type = None
     _validator_description = 'Must be an objectId type'
     
-    def __init__(self, model, required: bool = True, allow_null=False, default=None, 
+    def __init__(self, model, required: bool = True, allow_null=False, 
                  clean_data_func=None, related_name=None, **kwargs) -> None:
-        super().__init__(required, allow_null, default, clean_data_func, **kwargs)
+        super().__init__(required, allow_null, clean_data_func=clean_data_func, **kwargs)
         self.related_name = related_name if related_name else 'related'
         self.model = model
     
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
             if not any([
-                isinstance(value, valid) for valid in [str, ObjectId]
+                isinstance(value, valid) or hasattr(value, '_is_model') \
+                    for valid in [str, ObjectId]
                 ]):
                 raise TypeError("ObjectIDField data can only be "
-                                "str or ObjectID")
+                                "str, ObjectID, or CollectionModel")
         return super().validate_data(value)
     
-    def get_data(self) -> t.Union[str, ObjectId]:
+    def get_data(self) -> ObjectId:
         return super().get_data()
     
-    def set_data(self, value: t.Union[str, ObjectId]) -> None:
+    def set_data(self, value) -> None:
         valid_data = self.validate_data(value)
         if isinstance(valid_data, str):
             # If it's a string, convert to ObjectId

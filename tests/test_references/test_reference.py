@@ -41,20 +41,14 @@ class TestReferenceField(TestReferencesSetUp):
         gm_company = CarCompany().manager.find_one(company_name='GM')
         ford_company = CarCompany().manager.find_one(company_name='Ford')
         
-        new_car = CarModel()
-        new_car.set_model_data({
-            'company': ford_company.pk,
-            'make': 'Corvette',
-            'car_model': 'C8',
-            'color': 'white',
-            'year': 2023
-        })
+        new_car = CarModel(company=ford_company, make='Corvette', car_model='C8',
+                           color='white', year=2023)
         new_car.manager.insert_one(new_car.data(include_reference=False))
         
         # Now the update
         car_model = CarModel().manager.find_one(make='Corvette')
         update = CarModel().manager.update_one(query={'_id': car_model},
-                                                                   update={'compnay': gm_company})
+                                               update={'compnay': gm_company})
         
         assert update.acknowledged
     

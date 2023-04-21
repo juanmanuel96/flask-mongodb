@@ -1,13 +1,19 @@
 import typing as t
-from copy import deepcopy
-from pymongo.errors import OperationFailure
+import logging
 
-from flask_mongodb.core.exceptions import CollectionException, FieldError, MustRunStartDBCommand
-from flask_mongodb.core.wrappers import MongoCollection, MongoDatabase
+from copy import deepcopy
+
+from bson import ObjectId
+
+from flask_mongodb.core.exceptions import CollectionException, FieldError
+from flask_mongodb.core.wrappers import MongoCollection
 from flask_mongodb.models.fields import (EmbeddedDocumentField, EnumField,
                                          ObjectIdField, ReferenceIdField,
                                          StructuredArrayField)
 from flask_mongodb.models.manager import CollectionManager, ReferencenManager
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 
 class BaseCollection:
@@ -35,7 +41,8 @@ class BaseCollection:
             if not name.startswith('_'):
                 attr = getattr(self, name)
                 if hasattr(attr, '_model_field'):
-                    self._fields[name] = attr
+                    # Copy the field
+                    self._fields[name] = deepcopy(attr)
                     if hasattr(attr, '_reference'):
                         attr: ReferenceIdField
                         related_name = attr.related_name
@@ -296,6 +303,10 @@ class BaseCollection:
     def pk(self):
         return self._id.data
     
+    @pk.setter
+    def pk(self, value):
+        self._id.data = value
+    
     def get_collection_schema(self):
         return self.__define_validators__()
     
@@ -332,13 +343,7 @@ class CollectionModel(BaseCollection):
             setattr(self, name, field)
         
         if self._initial:
-            "Assign the respective field their data, even if the field does not exist"
-            for name, data in self._initial.items():
-                field = self._fields.get(name, None)
-                if field is None:
-                    # If field name not part of collection, ignore it
-                    continue
-                field.data = data
+            self.__assign_data_to_fields__()
         
         self.schema_validators = None
     
@@ -360,11 +365,15 @@ class CollectionModel(BaseCollection):
                     field.data = id_field_of_ref
     
     def data(self, as_str=False, exclude=(), include_reference=True, include_all_references=False):
+        """DEPRECATED; This method will be remove in version 2"""
+        
+        logger.warning('DEPRECATED: The `data` method is deprecated and will be removed in version 2')
         _data = {}
         for name, field in self.fields.items():
             if name in exclude:
                 # Go to next field
                 continue
+            
             if isinstance(field, EmbeddedDocumentField):
                 _data[name] = {}
                 for prop_name, prop_field in field.properties.items():

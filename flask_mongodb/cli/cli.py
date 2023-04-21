@@ -1,10 +1,11 @@
 import os
 
 import click
+from click import echo
 
 from flask_mongodb.core.mongo import MongoDB
 from .db_shifts import db_shift
-from .utils import echo
+# from .utils import echo
 
 
 @click.group('flask-mongodb', help=f"The FlaskMongoDB CLI tool")
@@ -21,7 +22,7 @@ def show_version(ctx, param ,value):
 
 
 version_options = click.Option(
-    ['--version'],
+    ['--version', '-v'],
     is_flag=True,
     callback=show_version,
     help='Show package version'

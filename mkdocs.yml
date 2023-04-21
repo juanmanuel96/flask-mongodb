@@ -7,9 +7,14 @@ nav:
   - Database Operations:
     - The MongoDB Class: mongo.md
     - Models: collections.md
-  - Serializing Data: serializers.md
-  - API Reference: api.md
-  - Version: "../"
+  - Data Validation:
+    - Serializing Data: serializers.md
+  - CLI Tool:
+    - flask-mongodb: cli.md
+  - API Refrence:
+    - API Reference: api.md
+  - Changelog:
+    - Changelog: changelog.md
 
 theme:
   name: readthedocs
@@ -17,7 +22,11 @@ theme:
 extra_css: 
   - stylesheet/extra.css
 
+extra: 
+  pkg_version: v1.8.0
+  version: v1.8.x
+
 plugins:
   - search
-  - mkdocs-versioning:
-      version: v1.5.0
+  - markdownextradata
+  - mike
