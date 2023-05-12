@@ -388,6 +388,9 @@ class CollectionModel(BaseCollection):
                                                     include_reference=include_all_references,
                                                     include_all_references=include_all_references)
             else:
+                if isinstance(field, ReferenceIdField):
+                    # If the field is a reference field, do not get the data
+                    continue
                 _data[name] = field.data if not as_str else str(field.data)
         return _data
     
