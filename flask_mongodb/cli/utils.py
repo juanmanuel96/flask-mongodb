@@ -13,6 +13,7 @@ from flask_mongodb.core.wrappers import MongoCollection
 from flask_mongodb.models.collection import CollectionModel
 from flask_mongodb.models.fields import EmbeddedDocumentField, EnumField, ReferenceIdField, StructuredArrayField
 
+
 def _enum_field_validators(field):
     if field.bson_type is not None:
         raise FieldError('The enum of the EnumField will establish the valid types')

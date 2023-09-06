@@ -103,7 +103,7 @@ class CollectionManager(BaseManager):
     pass
 
 
-class ReferencenManager(BaseManager):
+class ReferenceManager(BaseManager):
     _reference_manager = True
     
     def __init__(self, model=None, field_name: str = None):

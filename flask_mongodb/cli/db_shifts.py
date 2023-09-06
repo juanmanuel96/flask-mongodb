@@ -36,20 +36,20 @@ def examine(database, collection):
     
     models = current_mongo.collections[database]
     models.pop('shift_history', None)
-    exmination = {}
+    examination = {}
     
     if collection:
         model = models[collection]
         shift = Shift(model)
-        exmination[collection] = shift.examine()
+        examination[collection] = shift.examine()
     else:
         for name, model in models.items():
             shift = Shift(model)
-            exmination[name] = shift.examine()
+            examination[name] = shift.examine()
     
-    if any(list(exmination.values())):
+    if any(list(examination.values())):
         echo(f'The following collections in {database} need shifting: ')
-        for name, val in exmination.items():
+        for name, val in examination.items():
             if val:
                 echo(name)
     else:

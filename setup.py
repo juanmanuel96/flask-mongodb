@@ -6,6 +6,9 @@ from flask_mongodb.about import (AUTHOR, AUTHOR_EMAIL, DESCRIPTION,
 with open('README.md', 'r') as readme_file:
     long_description = readme_file.read()
 
+with open('requirements.txt', 'r') as reqs_file:
+    requirements = reqs_file.read().split('\n')
+
 setup(
     name='flask_mongodb',
     version=VERSION,
@@ -23,11 +26,7 @@ setup(
             'flask-mongodb = flask_mongodb.cli.cli:main'
         ]
     },
-    install_requires=[
-        'Flask>=2,<3', 
-        'pymongo<4.4', 
-        'WTForms==3.0.1', 
-        'email-validator==1.1.3'],
+    install_requires=requirements,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
