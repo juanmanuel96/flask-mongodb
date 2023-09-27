@@ -1,12 +1,12 @@
 # The MongoDB Class
 
-The main class of Flask-MongoDB is `MongoDB`. This class is the one that establishes the connection betweent he Flask app and the database. It is written the same way all Flask extensions write their code. The class has an optional app parameter and the `init_app` method. That method is the prefered way of creating the connection.
+The main class of Flask-MongoDB is `MongoDB`. This class is the one that establishes the connection between he Flask app and the database. It is written the same way all Flask extensions write their code. The class has an optional app parameter and the `init_app` method. That method is the preferred way of creating the connection.
 
 When a connection has been established, the Flask instance will have a new attribute called `mongo`. It can be accessed with the `current_app` proxy or the actual Flask instance.
 
 ## Configurations
 
-The MongoDB class has two configuration variables. These are `DATABASE` and `MODELS`. The first one tells the MongoDB instance which databases and connections to use. The `MODELS` configuration tells the instance where to look for those models. The elements of the list are refered to as model groups.
+The MongoDB class has two configuration variables. These are `DATABASE` and `MODELS`. The first one tells the MongoDB instance which databases and connections to use. The `MODELS` configuration tells the instance where to look for those models. The elements of the list are referred to as model groups.
 
 ### Database settings
 
@@ -80,7 +80,7 @@ If you were to install other packages with Flask-MongoDB models, you would add t
 
 ## Using the MongoDB instance at runtime
 
-After you have registered the models and created your endpoints, you will most likely want to use the MongoDB instace through your application to make database operations. This section will explain how to get the MongoDB instance throughout your application.
+After you have registered the models and created your endpoints, you will most likely want to use the MongoDB instance through your application to make database operations. This section will explain how to get the MongoDB instance throughout your application.
 
 ### App context
 
@@ -106,4 +106,4 @@ In your app initialization file, you have to initialize your MongoDB instance af
 
 ## Using models at runtime
 
-While developing your application, you will want to use the models. You can import any of your models as you would import any other class in Python. To use the model, simply initialize it and you can do model oprations with it. 
+While developing your application, you will want to use the models. You can import any of your models as you would import any other class in Python. To use the model, simply initialize it and you can do model operations with it. 

@@ -20,7 +20,9 @@ setup(
     maintainer=AUTHOR,
     maintainer_email=AUTHOR_EMAIL,
     license='BSD-2-Clause License',
-    packages=find_packages(),
+    packages=find_packages(
+        exclude=('tests',)
+    ),
     entry_points={
         'console_scripts': [
             'flask-mongodb = flask_mongodb.cli.cli:main'

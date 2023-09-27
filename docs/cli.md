@@ -4,7 +4,7 @@ Flask-MongoDB comes with a CLI tool to run database operations which are very ha
 
 ## Commands
 
-This section will describe all of the command available with the CLI tool. Note that running the base command will print out the help guide, it is the same as using the --help flag.
+This section will describe all the command available with the CLI tool. Note that running the base command will print out the help guide, it is the same as using the --help flag.
 
 The flask-mongodb is the main command for all other commands of the tool. Options available for this command: 
 
@@ -26,7 +26,7 @@ The shift CLI group is used to generate database shift. In Flask-MongoDB databas
 
 This command creates databases to be used by your application. It should be ran once the databases have been defined in the configurations of the application. Models do not have to be created before hand to create the database, it would be ideal but not necessary. The `start-db` command has an option for specifying a model to be created.
 
-Please note that with this package you can run your application without explicitly creating a database, but once you stop the application all data will be lost. This command must be ran whenerver a new model group has been created.
+Please note that with this package you can run your application without explicitly creating a database, but once you stop the application all data will be lost. This command must be run whenever a new model group has been created.
 
 Options for this command:
 
@@ -55,7 +55,7 @@ Options for this command:
 
 #### examine
 
-This command will compere a collection of the the databse current state, specifically the schema, with the collection model's schema. After the examination has been completed, the command will output detailing which colletions of the current database will require shifting. The examine will look for new fields, field alterations (e.g. changing a StringField to an EnumField), and
+This command will compere a collection of the database current state, specifically the schema, with the collection model's schema. After the examination has been completed, the command will output detailing which collections of the current database will require shifting. The `examine` will look for new fields, field alterations (e.g. changing a StringField to an EnumField), and
 
 Options for this command:
 
@@ -67,7 +67,7 @@ Options for this command:
 
 The run command will execute the shifts necessary for the databases. Shifting does another examination before applying the shifts.
 
-> **NOTE:** When the schema of the collection and the model have not changed at all, the shifting tool will treat this as another necessary shift. If a collection does not have data, the shift tool will also assume a shift is necessary. Everytime a shift is ran, a new entry in the database's shift history collection is inserted. Before running the `run` command, run the `examine` command first to see if a shift is necessary.
+> **NOTE:** When the schema of the collection and the model have not changed at all, the shifting tool will treat this as another necessary shift. If a collection does not have data, the shift tool will also assume a shift is necessary. Everytime a shift is run, a new entry in the database's shift history collection is inserted. Before running the `run` command, run the `examine` command first to see if a shift is necessary.
 
 Options for this command:
 

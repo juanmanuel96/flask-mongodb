@@ -7,3 +7,4 @@ pytest~=7.1.2
 pytest-html~=3.1.1
 pytest-metadata~=2.0.2
 mike~=1.1.2
+twine~=4.0.2

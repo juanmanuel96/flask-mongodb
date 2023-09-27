@@ -37,7 +37,7 @@ class BaseAppSetup:
         
         app_context = _app.app_context()
         app_context.push()
-        
+
         _mongo.init_app(_app)
         start_database(_mongo, _app, 'main')
         

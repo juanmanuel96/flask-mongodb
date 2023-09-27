@@ -1,12 +1,12 @@
 # What are models?
 
-Flask-MongoDB has a modelling class for your collections. The idea behind the models is somewhat the same as for the Django framework. The difference stands in the complexity behind the creation of these models compared to the ones of Django. Flask-MongoDB has a philosophy of making it easier for the developer to have their MongoDB collections well structured while still offering of having the data not so structured. 
+Flask-MongoDB has a modelling class for your collections. The idea behind the models is somewhat the same as for the Django framework. The difference stands in the complexity behind the creation of these models compared to the ones of Django. Flask-MongoDB has a philosophy of making it easier for the developer to have their MongoDB collections well-structured while still offering of having the data not so structured. 
 
 A `CollectionModel` from Flask-MongoDB represents a collection of a particular database. It is composed of metadata, fields, and the manager. 
 
 ## The collection metadata
 
-Its metadata are three class attributes: `collection_name`, `db_alias`, and `schemaless`. The first one must be specified in all models while the last two have default values `main` and `False`. By default a collection belongs to the main database and applies schema validation at the DB level. The `schemaless` attribute is used to enable or disable schema validation, it does not remove the requirement of fields. Schema validation can be completely turned off from collection to collection, if the developer chooses so. 
+Its metadata are three class attributes: `collection_name`, `db_alias`, and `schemaless`. The first one must be specified in all models while the last two have default values `main` and `False`. By default, a collection belongs to the main database and applies schema validation at the DB level. The `schemaless` attribute is used to enable or disable schema validation, it does not remove the requirement of fields. Schema validation can be completely turned off from collection to collection, if the developer chooses so. 
 
 ## A collection's fields or schema
 
@@ -35,7 +35,7 @@ class BlogPost(CollectionModel):
 
 ### Defining Fields
 
-As mentioned above, the fields are what define the schema of a document in a collection (**Remember**: Collections in MongoDB are composed of documents where each document schema does not have to necessarilly match as the next one). Before we create a field in out example model, they must be explained first.
+As mentioned above, the fields are what define the schema of a document in a collection (**Remember**: Collections in MongoDB are composed of documents where each document schema does not have to necessarily match as the next one). Before we create a field in out example model, they must be explained first.
 
 #### Structure of fields
 
@@ -43,7 +43,7 @@ A field describes a key in a document. It has a BSON type, a required flag, allo
 
 There is a `Field` base class that all other field types inherit from. To create your own field type, you must inherit from this class and make sure the BSON type matches a MongoDB BSON type unless your field does not require it. A good example of a field type that does not require a BSON type is the `EnumField`. 
 
-Each field, has its unique carachteristics. Some inherit from other field types, but do some special task or modification that justify its existance. For example, the `PasswordField` inherits from `StringField`. It modifies a bit the `set_data` method to hash the data that represents a password. 
+Each field, has its unique characteristics. Some inherit from other field types, but do some special task or modification that justify its existence. For example, the `PasswordField` inherits from `StringField`. It modifies a bit the `set_data` method to hash the data that represents a password. 
 
 Other characteristics are:
 
@@ -71,7 +71,7 @@ This is all that is required to create a model.
 
 ## Making queries
 
-MongoDB querying system uses JSON to make DB queries. Collection models instacnes come with a manager attribute which can run queries. The methods for running queries with the manager have the same name as the Collection instance from pymongo.
+MongoDB querying system uses JSON to make DB queries. Collection models instances come with a manager attribute which can run queries. The methods for running queries with the manager have the same name as the Collection instance from pymongo.
 
 ### Collection Manager
 
@@ -110,7 +110,6 @@ The `limit` method returns the first n documents of the query result.
 ##### count method
 
 The `count` method returns an int representation of the total documents of the query result.
-
 
 ##### run_cursor_method
 

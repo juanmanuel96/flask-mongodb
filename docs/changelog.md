@@ -14,6 +14,22 @@ The structure for the changelog will be the following:
 
 <hr>
 
+## v1.8.2
+
+### Features
+
+* No new features.
+
+### Fixes
+
+* `EnumField` issue with `allow_null` and default value being `None`
+* Documentation grammatical errors fixed
+* Other styles improvements
+
+### Notes
+
+1. This changelog does not have a log for v1.8.1. This was a mistake when deploying the said version.
+
 ## v1.8.0
 
 ### Features

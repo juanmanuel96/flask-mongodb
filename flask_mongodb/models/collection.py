@@ -11,7 +11,6 @@ from flask_mongodb.models.fields import (EmbeddedDocumentField, EnumField,
                                          ObjectIdField, ReferenceIdField,
                                          StructuredArrayField)
 from flask_mongodb.models.manager import CollectionManager, ReferenceManager
-from flask_mongodb.models.utils import model_to_dictionary
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -27,7 +26,7 @@ class BaseCollection:
     _id = ObjectIdField()
     
     def __init__(self) -> None:
-        self._fields: t.Dict
+        self._fields: t.Dict = dict()
         self.__collection__: t.Optional[MongoCollection] = None
         if not self.manager_class:
             raise ValueError('Missing collection manager class')
@@ -82,7 +81,7 @@ class BaseCollection:
         return attr 
     
     def __getattr__(self, __name):
-        return super().__getattr__(__name) 
+        return super().__getattr__(__name)
     
     def __str__(self):
         return self.collection_name

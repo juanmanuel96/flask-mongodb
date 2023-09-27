@@ -4,7 +4,7 @@ Flask-MongoDB is a Flask extension for connecting one or more MongoDB databases 
 
 ## Installation
 
-Currently, the package is not in pip. However, you can install the package with pip by pulling from GitHub with the follwing command: 
+Currently, the package is not in pip. However, you can install the package with pip by pulling from GitHub with the following command: 
 ```
 pip install git+https://github.com/juanmanuel96/flask-mongodb@{{ pkg_version }}
 ```
@@ -52,10 +52,10 @@ mongo = MongoDB()
 ```
 To connect your MongoDB instance to the Flask instance, you have two options:
 
-1. Pass the Flask instance as parameter of the `MongoDB` instanciation 
+1. Pass the Flask instance as parameter of the `MongoDB` instantiation 
 2. Use the factory method and call the `init_app` method from `MongoDB` passing a Flask instance as parameter.
 
-### Starting the databae
+### Starting the database
 
 Before actually running the application, you must create the database (or databases) and their collections. Run the following command to create the databases of your application.
 
