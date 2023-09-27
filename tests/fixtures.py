@@ -7,6 +7,7 @@ from flask_mongodb.cli.utils import start_database
 from flask_mongodb.core.wrappers import MongoConnect
 from tests.utils import DB_NAME, MAIN
 
+
 class BaseAppSetup:
     APP_CONFIG = {
         'TESTING': True,
@@ -16,7 +17,8 @@ class BaseAppSetup:
                 'PORT': 27017,
                 'NAME': DB_NAME
             }
-        }
+        },
+        'MODELS': []
     }
     
     # All tests must specify the models that they will use
@@ -35,7 +37,7 @@ class BaseAppSetup:
         
         app_context = _app.app_context()
         app_context.push()
-        
+
         _mongo.init_app(_app)
         start_database(_mongo, _app, 'main')
         

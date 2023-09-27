@@ -13,7 +13,7 @@ def cli(version):
     pass
 
 
-def show_version(ctx, param ,value):
+def show_version(ctx, param, value):
     if not value:
         return
     
@@ -59,6 +59,7 @@ def create_model(path, package):
 
 
 cli.add_command(db_shift)
+
 
 def main():
     cli.params.append(version_options)

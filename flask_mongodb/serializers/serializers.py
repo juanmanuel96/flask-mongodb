@@ -15,6 +15,7 @@ from flask_mongodb.serializers.meta import SerializerMeta
 
 _default_serializer_meta = SerializerMeta
 
+
 class SerializerBase(BaseForm):
     def __init__(self, fields: dict, prefix="", meta=_default_serializer_meta):
         """
@@ -81,6 +82,7 @@ class SerializerBase(BaseForm):
                 data = unset_value
 
             field.process(None, data, extra_filters=field_extra_filters)
+
 
 class Serializer(SerializerBase, metaclass=FormMeta):
     Meta = SerializerMeta

@@ -10,7 +10,7 @@ from flask_mongodb.core.wrappers import MongoCollection
 from flask_mongodb.models.fields import (EmbeddedDocumentField, EnumField,
                                          ObjectIdField, ReferenceIdField,
                                          StructuredArrayField)
-from flask_mongodb.models.manager import CollectionManager, ReferencenManager
+from flask_mongodb.models.manager import CollectionManager, ReferenceManager
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -26,8 +26,8 @@ class BaseCollection:
     _id = ObjectIdField()
     
     def __init__(self) -> None:
-        self._fields = dict()
-        self.__collection__: MongoCollection = None
+        self._fields: t.Dict = dict()
+        self.__collection__: t.Optional[MongoCollection] = None
         if not self.manager_class:
             raise ValueError('Missing collection manager class')
         self._manager = self.manager_class(self)
@@ -48,7 +48,7 @@ class BaseCollection:
                         related_name = attr.related_name
                         if related_name is None:
                             related_name = str(self) + '_related'
-                        setattr(attr.model, related_name, ReferencenManager(self, name))
+                        setattr(attr.model, related_name, ReferenceManager(self, name))
                         setattr(self, f'{name}_id', ObjectIdField())
                         self._fields[f'{name}_id'] = getattr(self, f'{name}_id')
 
@@ -64,8 +64,7 @@ class BaseCollection:
         field.data = __value
         if hasattr(field, '_reference'):
             self.fields[f'{__name}_id'].data = __value
-            
-    
+
     def __getitem__(self, __name: str):
         # Dict style getting
         field = self._fields.get(__name, None)
@@ -82,7 +81,7 @@ class BaseCollection:
         return attr 
     
     def __getattr__(self, __name):
-        return super().__getattr__(__name) 
+        return super().__getattr__(__name)
     
     def __str__(self):
         return self.collection_name
@@ -384,16 +383,16 @@ class CollectionModel(BaseCollection):
                     # CONSIDER: If best option is to raise and error
                     _data[name] = ref
                     continue  # Go to next field
-                _data[name] = field.reference.data(as_str, exclude, 
-                                                    include_reference=include_all_references,
-                                                    include_all_references=include_all_references)
+                _data[name] = field.reference.data(as_str, exclude,
+                                                   include_reference=include_all_references,
+                                                   include_all_references=include_all_references)
             else:
                 if isinstance(field, ReferenceIdField):
                     # If the field is a reference field, do not get the data
                     continue
                 _data[name] = field.data if not as_str else str(field.data)
         return _data
-    
+
     def set_model_data(self, data: dict):
         self._initial = data
         self.__assign_data_to_fields__()

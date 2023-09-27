@@ -1,5 +1,4 @@
 import typing as t
-import itertools as iter
 from copy import deepcopy
 
 from bson import ObjectId
@@ -7,6 +6,7 @@ from datetime import date, datetime
 from werkzeug.security import generate_password_hash
 
 from flask_mongodb.core.exceptions import FieldError, InvalidChoice
+
 
 class emptyfield:
     def set(self, *args, **kwargs):
@@ -27,7 +27,7 @@ class Field(FieldMixin):
     bson_type: list = None
     _validator_description = None
 
-    def __init__(self, required: bool = True, allow_null=False, default: t.Union[t.Any, t.Callable]=emptyfield(), 
+    def __init__(self, required: bool = True, allow_null=False, default: t.Union[t.Any, t.Callable] = emptyfield(),
                  clean_data_func=None) -> None:
         """
         Simple Field class for inheritance by other field types
@@ -68,7 +68,7 @@ class Field(FieldMixin):
     
     def _check_if_allow_null(self, data):
         # To be called during data validation where is null is allowed and data is None,
-        # the it should do nothing. Otherwise, should validate the data
+        # it should do nothing. Otherwise, should validate the data
         if self.allow_null and data is None:
             return True
         else:
@@ -123,7 +123,7 @@ class ObjectIdField(Field):
         if not self._check_if_allow_null(value):
             if not any([
                 isinstance(value, valid) or hasattr(value, '_is_model') for valid in [str, ObjectId]
-                ]):
+            ]):
                 raise TypeError("ObjectIDField data can only be "
                                 "str, ObjectID, or a model")
         return super().validate_data(value)
@@ -232,7 +232,6 @@ class DateField(Field):
         to_data = to_data if isinstance(to_data, datetime) or self._check_if_allow_null(value) \
             else datetime(to_data.year, to_data.month, to_data.day)
         self.__data__ = to_data
-        
 
 
 class DatetimeField(DateField):
@@ -319,7 +318,7 @@ class ArrayField(Field):
         super().__init__(required=required, allow_null=allow_null, **kwargs)
     
     def validate_data(self, value):
-        if self._check_if_allow_null(value):
+        if not self._check_if_allow_null(value):
             if not isinstance(value, list):
                 raise TypeError(f'Incoming data can only be list')
         return super().validate_data(value)
@@ -330,6 +329,7 @@ class ArrayField(Field):
 
 class StructuredArrayField(ArrayField):
     _validator_descriptor = 'Items must match the desired structure'
+
     def __init__(self, items: dict[str, t.Type[Field]], required: bool = True, 
                  max_items: int = -1, min_items=-1, allow_null=False, 
                  unique_items=False, **kwargs) -> None:
@@ -346,21 +346,21 @@ class EnumField(Field):
     bson_type = None
     
     def __init__(self, required: bool = True, 
-                 choices: t.Tuple=None, allow_null=False, 
-                 expected_value_types=['string'], **kwargs) -> None:
+                 choices: t.Optional[t.Tuple] = None, allow_null=False,
+                 expected_value_types=('string',), **kwargs) -> None:
         if not choices:
             raise FieldError('Must include choices')
         if not expected_value_types:
-            raise FieldError('Must provide at leasr one expected value type as a BSON type alias')
-        self.excpected_value_types = expected_value_types
+            raise FieldError('Must provide at least one expected value type as a BSON type alias')
+        self.expected_value_types = expected_value_types
         
         self.choices = choices
         self.enum = [choice[0] for choice in choices]
         super().__init__(required=required, allow_null=allow_null, **kwargs)
     
     def validate_data(self, value):
-        if self._check_if_allow_null(value):
-            if (value not in self.enum):
+        if not self._check_if_allow_null(value):
+            if value not in self.enum:
                 raise InvalidChoice("Not a valid choice")
         value = super().validate_data(value)
         return value.pk if hasattr(value, '_is_model') else value
@@ -370,33 +370,35 @@ class ReferenceIdField(Field):
     _reference = True
     bson_type = None
     _validator_description = 'Must be an objectId type'
-    
-    def __init__(self, model, required: bool = True, allow_null=False, 
+
+    def __init__(self, model, required: bool = True, allow_null=False,
                  clean_data_func=None, related_name=None, **kwargs) -> None:
         super().__init__(required, allow_null, clean_data_func=clean_data_func, **kwargs)
         self.related_name = related_name if related_name else 'related'
         self.model = model
-    
+
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
-            if not any([
-                isinstance(value, valid) or hasattr(value, '_is_model') \
-                    for valid in [str, ObjectId]
-                ]):
+            if not any(
+                    [
+                        isinstance(value, valid) or hasattr(value, '_is_model')
+                        for valid in [str, ObjectId]
+                    ]
+            ):
                 raise TypeError("ObjectIDField data can only be "
                                 "str, ObjectID, or CollectionModel")
         return super().validate_data(value)
-    
+
     def get_data(self) -> ObjectId:
         return super().get_data()
-    
+
     def set_data(self, value) -> None:
         valid_data = self.validate_data(value)
         if isinstance(valid_data, str):
             # If it's a string, convert to ObjectId
             valid_data = ObjectId(valid_data)
         self.__data__ = valid_data
-    
+
     @property
     def reference(self):
         ref = self.model().manager.find_one(_id=self.data)

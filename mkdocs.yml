@@ -11,7 +11,7 @@ nav:
     - Serializing Data: serializers.md
   - CLI Tool:
     - flask-mongodb: cli.md
-  - API Refrence:
+  - API Reference:
     - API Reference: api.md
   - Changelog:
     - Changelog: changelog.md
@@ -23,7 +23,7 @@ extra_css:
   - stylesheet/extra.css
 
 extra: 
-  pkg_version: v1.8.0
+  pkg_version: v1.8.2
   version: v1.8.x
 
 plugins:

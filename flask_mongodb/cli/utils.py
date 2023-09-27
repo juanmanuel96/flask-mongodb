@@ -13,13 +13,14 @@ from flask_mongodb.core.wrappers import MongoCollection
 from flask_mongodb.models.collection import CollectionModel
 from flask_mongodb.models.fields import EmbeddedDocumentField, EnumField, ReferenceIdField, StructuredArrayField
 
+
 def _enum_field_validators(field):
     if field.bson_type is not None:
         raise FieldError('The enum of the EnumField will establish the valid types')
     
     enum = {'enum': field.enum}
     if field.allow_null:
-        enum['enum'].append('null')
+        field.bson_type = ['null']
     return enum['enum']
 
 
@@ -195,7 +196,7 @@ def define_schema_validator(model_instance):
     return validators if validators['$jsonSchema']['properties'] else {}
 
 
-def create_collection(mongo: MongoDB, collection_cls: CollectionModel):
+def create_collection(mongo: MongoDB, collection_cls: t.Type[CollectionModel]):
     _instance = collection_cls()
     schema_validators = define_schema_validator(_instance) if not _instance.schemaless else None
     database = mongo.connections[_instance.db_alias]
