@@ -6,7 +6,7 @@ from flask_mongodb.about import (AUTHOR, AUTHOR_EMAIL, DESCRIPTION,
 with open('README.md', 'r') as readme_file:
     long_description = readme_file.read()
 
-with open('requirements.txt', 'r') as reqs_file:
+with open('requirements/requirements.txt', 'r') as reqs_file:
     requirements = reqs_file.read().split('\n')
 
 setup(
@@ -30,7 +30,7 @@ setup(
     },
     install_requires=requirements,
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 1 - Planning',
         'Intended Audience :: Developers',
         'Environment :: Web Environment',
         'Framework :: Flask',
@@ -39,6 +39,7 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: Implementation :: CPython'
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Topic :: Database'
     ]
 )
