@@ -10,7 +10,7 @@ from flask_mongodb.core.exceptions import (CollectionInvalid, CouldNotRegisterCo
                                            DatabaseAliasException, DatabaseException, ImproperConfiguration, InvalidClass)
 from flask_mongodb.core.wrappers import MongoConnect, MongoDatabase
 from flask_mongodb.models import CollectionModel
-from flask_mongodb.models.shitfs.hisotry import create_db_shift_hisotry
+from flask_mongodb.models.shitfs.history import create_db_shift_history
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -149,7 +149,7 @@ class MongoDB:
         
         # Now add the history model
         for db in self.connections.keys():
-            self.__collections[db].update(shift_history=create_db_shift_hisotry(db))
+            self.__collections[db].update(shift_history=create_db_shift_history(db))
     
     def __register_collection(self, collection_cls: t.Type[CollectionModel]):
         """

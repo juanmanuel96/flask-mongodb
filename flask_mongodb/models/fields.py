@@ -269,6 +269,9 @@ class EmbeddedDocumentField(Field):
         super().__init__(required=required, allow_null=allow_null, **kwargs)
         self.properties: t.Dict[str, Field] = self.__define_properties__(properties)
 
+    def __getitem__(self, __name: str):
+        return self.properties[__name]
+
     def __define_properties__(self, properties: t.Dict) -> t.Dict:
         json_field_properties = {}
         for prop_name, prop in properties.items():

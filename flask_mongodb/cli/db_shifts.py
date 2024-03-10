@@ -2,7 +2,7 @@ import click
 import flask.cli
 from click import echo
 
-from flask_mongodb.models.shitfs import Shift, create_db_shift_hisotry
+from flask_mongodb.models.shitfs import Shift, create_db_shift_history
 from .utils import add_new_collection, create_collection, start_database
 
 
@@ -95,11 +95,10 @@ def start(all, database: str, path: str):
     from flask_mongodb import current_mongo
     
     if all:
-        database, path = None, None
         start_database(current_mongo, current_app)
         
         for db_name in current_mongo.connections.keys():
-            HistoryModel = create_db_shift_hisotry(db_name)
+            HistoryModel = create_db_shift_history(db_name)
             create_collection(current_mongo, HistoryModel)
     else:
         # Check database is in the configurations
@@ -112,7 +111,7 @@ def start(all, database: str, path: str):
             current_app.config['MODELS'].append(path)
             
         start_database(current_mongo, current_app, database)
-        HistoryModel = create_db_shift_hisotry(database)
+        HistoryModel = create_db_shift_history(database)
         create_collection(current_mongo, HistoryModel)
     
     click.echo('Database creation complete')
@@ -128,11 +127,14 @@ def add_collections(database):
     try:
         db = current_mongo.connections[database]
     except KeyError:
-        click.echo('')
-    
+        click.echo('Database does not exist')
+        return
+
     if not db.client.list_database_names():
         click.echo('Run the start-db command first')
         return
-    
-    add_new_collection(current_mongo, current_app, database)
+
+    done = add_new_collection(current_mongo, current_app, database)
     click.echo('Addition of collection complete')
+
+    return done

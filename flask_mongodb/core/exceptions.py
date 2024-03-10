@@ -1,5 +1,6 @@
 import json
 
+
 class BaseFlaskMongodbException(Exception):
     default_message: str = None
     
@@ -102,4 +103,4 @@ class MustRunStartDBCommand(BaseFlaskMongodbException):
 
 
 class ImproperConfiguration(BaseFlaskMongodbException):
-    default_message = 'App has been imporoperly configured'
+    default_message = 'App has been improperly configured'

@@ -2,10 +2,10 @@ import typing as t
 
 from flask_mongodb.core.exceptions import CollectionHasNoData
 from flask_mongodb.core.wrappers import MongoDatabase
-from flask_mongodb.models.fields import (ArrayField, BooleanField, DatetimeField, Field, StringField, IntegerField, FloatField, 
+from flask_mongodb.models.collection import CollectionModel
+from flask_mongodb.models.fields import (ArrayField, BooleanField, DatetimeField, Field, StringField, IntegerField,
+                                         FloatField,
                                          EmbeddedDocumentField, ObjectIdField)
-from ..collection import CollectionModel
-
 
 MONGODB_BSON_TYPE_MAP = {
     'string': StringField,
@@ -21,7 +21,7 @@ MONGODB_BSON_TYPE_MAP = {
 
 
 class Shift:
-    def __init__(self, model: t.Type[CollectionModel]) -> None:
+    def __init__(self, model: CollectionModel) -> None:
         self._model = model
         self.collection_schema = None
         self.should_shift = {
@@ -71,8 +71,7 @@ class Shift:
                 if name == '_id':
                     # Check that the _id field has not been altered
                     if not isinstance(field.data, type(collection_data['_id'])):
-                        raise Exception('_id field cannot be altered after creation of'\
-                            'collection')
+                        raise Exception('_id field cannot be altered after creation of collection')
                 else:
                     field_definition = schema_properties[name]
                     bson_type: list = field_definition.get('bsonType', [])
@@ -112,14 +111,12 @@ class Shift:
                 if name == '_id':
                     # Check that the _id field has not been altered
                     if not isinstance(model_fields['_id'].data, type(data)):
-                        raise Exception('_id field cannot be altered after creation of'\
-                            'collection')
+                        raise Exception('_id field cannot be altered after creation of collection')
                 else:
                     if isinstance(data, dict):
                         inner_field = model_fields[name].properties
                         self._compare_collection_to_model(inner_field, data, _path)
-    
-    
+
     def get_collection_data(self):
         db = self._get_database()
         collection = self._get_collection(db)
@@ -129,10 +126,10 @@ class Shift:
     def verify(self):
         """Only applies to models with a schema"""
         collection_schema = self._get_collection_schema()
-        old_data: dict = list(self.get_collection_data())
-        if not old_data:
+        old_collection_data: t.List[t.Dict] = list(self.get_collection_data())
+        if not old_collection_data:
             raise CollectionHasNoData('No data in collection')
-        old_data = old_data[0]
+        old_data = old_collection_data[0]
         schema_properties = collection_schema['$jsonSchema']['properties']
         
         self._compare_model_to_collection(schema_properties, self._model.fields, old_data)
@@ -152,11 +149,11 @@ class Shift:
         return any([True if f else False for f in self.should_shift.values()])
     
     def shift(self):
-        def _find_embedded_property_default(embedded_field: EmbeddedDocumentField, property_path: list):
-            prop_name = property_path.pop()
-            doc_property: t.Type[Field] = embedded_field[prop_name]
+        def _find_embedded_property_default(embedded_field: EmbeddedDocumentField, _p_path: list):
+            prop_name = _p_path.pop()
+            doc_property: Field = embedded_field[prop_name]
             if isinstance(doc_property, EmbeddedDocumentField):
-                return _find_embedded_property_default(doc_property, property_path)
+                return _find_embedded_property_default(doc_property, _p_path)
             else:
                 return doc_property.data
         

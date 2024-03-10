@@ -259,7 +259,7 @@ def add_new_collection(mongo: MongoDB, app: Flask, database):
         models = import_string(mod)
         models_list.append(models)
     
-    # Itereate over the list and create the new collections
+    # Iterate over the list and create the new collections
     for m in models_list:
         module_contents = dir(m)
         for cont in module_contents:
@@ -275,8 +275,10 @@ def add_new_collection(mongo: MongoDB, app: Flask, database):
                     continue
     
     if collections_added:
-        shift_model = mongo.collections[database]['shift_history']
+        shift_model = mongo.collections[database]['shift_history']()
         shift_model.set_model_data({
             'db_collection': 'Added collections: ' + ', '.join(collections_added)
         })
         shift_model.manager.insert_one(shift_model.data())
+
+    return True
