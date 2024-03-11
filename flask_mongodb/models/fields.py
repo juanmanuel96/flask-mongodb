@@ -32,38 +32,63 @@ class Field(FieldMixin):
         """
         Simple Field class for inheritance by other field types
         """
-        if clean_data_func and not self._iscallable(clean_data_func):
+        if clean_data_func and not self._is_callable(clean_data_func):
             raise ValueError('`clean_data_func` must be callable')
         self.clean_data_func = clean_data_func
         self.required = required
         self.allow_null = allow_null
         self.__data__ = emptyfield()
+        self._initial = emptyfield()
         self._validated = False
         
         if not isinstance(default, emptyfield):
-            if self._iscallable(default):
+            if self._is_callable(default):
                 self.__data__ = default
+                self._initial = default
             else:
-                self.__data__ = self.validate_data(default) 
+                self.__data__ = self.validate_data(default)
+                self._initial = self.validate_data(default)
+
+    def __copy__(self):
+        cls = self.__class__
+        obj = cls.__new__(cls)
+        obj.__dict__.update(self.__dict__)
+        return obj
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        obj = cls.__new__(cls)
+        memo[id(self)] = obj
+        for k, v in self.__dict__.items():
+            setattr(obj, k, deepcopy(v, memo))
+        return obj
+
+    @property
+    def initial(self):
+        if isinstance(self._initial, emptyfield):
+            return self._initial.get()
+        if self._is_callable(self._initial):
+            return self._initial()
+        return self._initial
 
     @property
     def data(self) -> t.Any:
         if isinstance(self.__data__, emptyfield):
             return self.__data__.get()
-        if self._iscallable(self.__data__):
+        if self._is_callable(self.__data__):
             return self.__data__()
         return self.get_data()
 
     @data.setter
     def data(self, value):
-        self.run_validation(value)
-        self.set_data(value)
+        raise AttributeError('Cannot assign value to data directly, use set_data')
     
     @property
     def description(self):
         return self._validator_description
 
-    def _iscallable(self, value):
+    @staticmethod
+    def _is_callable(value):
         return callable(value)
     
     def _check_if_allow_null(self, data):
@@ -73,20 +98,6 @@ class Field(FieldMixin):
             return True
         else:
             return False
-    
-    def __copy__(self):
-        cls = self.__class__
-        obj = cls.__new__(cls)
-        obj.__dict__.update(self.__dict__)
-        return obj
-    
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        obj = cls.__new__(cls)
-        memo[id(self)] = obj
-        for k, v in self.__dict__.items():
-            setattr(obj, k, deepcopy(v, memo))
-        return obj
     
     def set_data(self, value: t.Any) -> None:
         self.__data__ = value
@@ -115,8 +126,6 @@ class ObjectIdField(Field):
     bson_type = ["objectId"]
     
     def __init__(self, required: bool = True, allow_null=False, default=ObjectId) -> None:
-        if issubclass(default, ObjectId):
-            default = default()
         super().__init__(required, allow_null, default)
     
     def validate_data(self, value):
@@ -236,8 +245,7 @@ class DateField(Field):
 
 class DatetimeField(DateField):
     def __init__(self, required: bool = True, allow_null=False, **kwargs) -> None:
-        super().__init__(format=None, required=required, allow_null=allow_null,
-                         **kwargs)
+        super().__init__(format=None, required=required, allow_null=allow_null, **kwargs)
     
     def set_data(self, value: t.Any) -> None:
         fmt = "%Y-%m-%d %H:%M:%S.%f"
@@ -270,7 +278,7 @@ class EmbeddedDocumentField(Field):
         self.properties: t.Dict[str, Field] = self.__define_properties__(properties)
 
     def __getitem__(self, __name: str):
-        return self.properties[__name]
+        return self.data[__name]
 
     def __define_properties__(self, properties: t.Dict) -> t.Dict:
         json_field_properties = {}
@@ -297,13 +305,13 @@ class EmbeddedDocumentField(Field):
         for prop_name, prop_field in props.items():
             value = data.get(prop_name, None)
             if value is not None:
-                prop_field.data = value
+                prop_field.set_data(value)
     
     def set_data(self, value: t.Union[dict, None]):
         self.validate_data(value)
         assert isinstance(value, dict)
         self._set_properties_data(value)
-        self.__data__ = {name: field.data for name, field in self.properties.items()}
+        self.__data__ = self.properties
     
     def __iter__(self):
         return iter(self.data.keys() or [])
@@ -359,6 +367,9 @@ class EnumField(Field):
         
         self.choices = choices
         self.enum = [choice[0] for choice in choices]
+        if allow_null:
+            # If None is allowed, include it in the enum values
+            self.enum.append(None)
         super().__init__(required=required, allow_null=allow_null, **kwargs)
     
     def validate_data(self, value):
@@ -371,7 +382,7 @@ class EnumField(Field):
 
 class ReferenceIdField(Field):
     _reference = True
-    bson_type = None
+    bson_type = ["objectId"]
     _validator_description = 'Must be an objectId type'
 
     def __init__(self, model, required: bool = True, allow_null=False,
@@ -382,14 +393,8 @@ class ReferenceIdField(Field):
 
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
-            if not any(
-                    [
-                        isinstance(value, valid) or hasattr(value, '_is_model')
-                        for valid in [str, ObjectId]
-                    ]
-            ):
-                raise TypeError("ObjectIDField data can only be "
-                                "str, ObjectID, or CollectionModel")
+            if not any([isinstance(value, (str, ObjectId)) or hasattr(value, '_is_model')]):
+                raise TypeError("ObjectIDField data can only be str, ObjectID, or CollectionModel")
         return super().validate_data(value)
 
     def get_data(self) -> ObjectId:
@@ -400,9 +405,16 @@ class ReferenceIdField(Field):
         if isinstance(valid_data, str):
             # If it's a string, convert to ObjectId
             valid_data = ObjectId(valid_data)
+        elif hasattr(valid_data, '_is_model'):
+            valid_data = valid_data.pk
+
         self.__data__ = valid_data
 
     @property
     def reference(self):
-        ref = self.model().manager.find_one(_id=self.data)
+        from flask_mongodb.models import CollectionModel
+
+        if self.data is None:
+            return None
+        ref: CollectionModel = self.model().manager.find_one(_id=self.data)
         return ref

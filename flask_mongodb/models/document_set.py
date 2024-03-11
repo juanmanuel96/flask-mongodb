@@ -12,7 +12,8 @@ class NotACursorMethod(Exception):
 
 class DocumentSet(InimitableObject):
     def __init__(self, model, *args, **kwargs):
-        self._model = model
+        from flask_mongodb.models import CollectionModel
+        self._model: CollectionModel = model
         self.__cursor = Cursor(model.collection, *args, **kwargs)
     
     def __iter__(self):
@@ -21,6 +22,7 @@ class DocumentSet(InimitableObject):
     def _model_representation(self, doc):
         m = deepcopy(self._model)
         m.set_model_data(doc)
+        m.connect()
         return m
     
     def next(self):

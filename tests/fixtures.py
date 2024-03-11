@@ -1,5 +1,4 @@
 import pytest
-from click.testing import CliRunner
 from flask import Flask
 
 from flask_mongodb import MongoDB

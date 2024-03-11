@@ -19,28 +19,45 @@ class TestModelInstance(BaseAppSetup):
 
     def test_embedded_document_default_values(self):
         m = ModelWithEmbeddedDocument(phone_number={'number': '7559991122'})
-        assert m['phone_number']['confirmed'] == False
+        assert not  m['phone_number']['confirmed'].data
 
     def test_embedded_document_change(self):
         m = ModelWithEmbeddedDocument(phone_number={'number': '7559991122'})
         number = m['phone_number']['number']
-        m['phone_number']['number'] = '88833399922'
+        m['phone_number']['number'].set_data('88833399922')
 
-        assert number != m['phone_number']['number']
+        assert number.data != m['phone_number']['number']
+
+    def test_field_value_change(self):
+        text_replacement = 'This is an improved sample text'
+
+        m1 = ModelForTest(sample_text='This is a sample text')
+        m1['sample_text'] = text_replacement
+        changes = m1.modified_fields()
+
+        assert changes['sample_text'] == text_replacement, "Field data did not change"
+
+    def test_embedded_document_field_change(self):
+        m = ModelWithEmbeddedDocument(phone_number={'number': '7559991122'})
+        m['phone_number']['number'].set_data('88833399922')
+        changes = m.modified_fields()
+
+        assert changes['phone_number.number'] == '88833399922', "Change not detected"
+
 
 class TestModelOperations(BaseAppSetup):
     MODELS = ['tests.model_for_tests.core']
 
     def test_find_one_that_does_not_exist(self):
         m = ModelWithEmbeddedDocument().manager.find_one(**{'phone_number.number': "7664328912"})
-        assert m == None
+        assert m is None
 
     def test_empty_insert_one(self):
-        ack = ModelWithDefaultValues().manager.insert_one()
-        assert ack.acknowledged
+        with pytest.raises(ValueError):
+            ack = ModelWithDefaultValues().manager.insert_one()
 
     def test_insert_one_with_some_fields(self):
-        ack = ModelWithDefaultValues().manager.insert_one({'string_field': 'My name is...'})
+        ack = ModelWithDefaultValues().save()
         assert ack.acknowledged
 
     def test_manager_operation_return_data_type(self):
@@ -50,13 +67,14 @@ class TestModelOperations(BaseAppSetup):
         assert isinstance(ds, DocumentSet), \
             'find() should return a DocumentSet'
 
-    def test_document_set_elemets_are_models(self):
+    def test_document_set_elements_are_models(self):
         model = ModelForTest()
         ds = model.manager.find()
 
         assert all([isinstance(item, ModelForTest) for item in ds]), \
             'All instaces must be of the ModelForTest'
 
+    @pytest.mark.skip(reason='Collection is no longer inimitable')
     def test_inimitable_object(self):
         model = ModelWithDefaultValues()
         instance: ModelForTest = model.manager.find().first()
@@ -64,6 +82,7 @@ class TestModelOperations(BaseAppSetup):
         assert instance.collection is None, \
             "It seems that the collection was imitated"
 
+    @pytest.mark.skip(reason='Tested in first insert, enable when insert management is improved')
     def test_required_field(self):
         model = ModelForTest2()
         model['body'] = 'This is the body'
@@ -74,7 +93,7 @@ class TestModelOperations(BaseAppSetup):
     def test_update(self):
         model1 = ModelForTest()
         model1['sample_text'] = 'sample text changed'
-        ack = model1.manager.update_one(query={'_id': model1.pk}, update=model1.data(include_reference=False))
+        ack = model1.manager.run_save()
 
         assert ack.acknowledged
 
@@ -84,16 +103,16 @@ class TestModelOperations(BaseAppSetup):
             'title': 'title',
             'body': 'This is the body of the article'
         })
-        model2.manager.insert_one()
+        model2.save()
 
         # Now fetch the new data
         same_model = model2.manager.find().first()
-        ack = model2.manager.delete_one(query={'_id':same_model.pk})
+        ack = model2.manager.delete_one(query={'_id': same_model.pk})
 
         assert ack.acknowledged
 
     def test_enum_field_with_null_value(self):
         model = ModelWithEnumField(alcohol_enum_field=None)
-        ack = model.manager.insert_one(model.data(include_reference=False))
+        ack = model.save()
 
         assert ack.acknowledged

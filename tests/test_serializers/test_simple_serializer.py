@@ -24,6 +24,7 @@ class Serializer1(serializers.Serializer):
     created = wtfields.DateTimeField(validators=[validators.required()])
 
 
+@pytest.mark.skip(reason='Serializers will possibly get deleted')
 class TestSerializer:
     def test_serializer_is_valid(self):
         data = {

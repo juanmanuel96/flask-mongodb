@@ -1,5 +1,6 @@
 import typing as t
 
+from flask_mongodb.cli.utils import define_schema_validator
 from flask_mongodb.core.exceptions import CollectionHasNoData
 from flask_mongodb.core.wrappers import MongoDatabase
 from flask_mongodb.models.collection import CollectionModel
@@ -29,6 +30,7 @@ class Shift:
             'new_fields': [],
             'removed_fields': []
         }
+        self._model_schema = {}
     
     def _get_database(self) -> MongoDatabase:
         from flask_mongodb import current_mongo
@@ -47,9 +49,12 @@ class Shift:
             return collection_options['validator']
         else:
             return None
+
+    def _set_model_schema(self):
+        self._model_schema = define_schema_validator(self._model)
     
     def _get_model_schema(self):
-        return self._model.get_collection_schema()
+        return self._model_schema
     
     def _compare_model_to_collection(self, schema_properties: dict, model_fields: dict, 
                                      collection_data: dict, field_path=''):
@@ -200,7 +205,8 @@ class Shift:
             collection.update_many({}, {'$set': {field_path: value}}, bypass_document_validation=True)
         
         # Create the new schema
-        new_schema = self._model.get_collection_schema()
+        self._set_model_schema()
+        new_schema = self._get_model_schema()
         db.command('collMod', self._model.collection_name, 
                    validator=new_schema, 
                    validationLevel=self._model.validation_level)

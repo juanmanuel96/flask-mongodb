@@ -2,7 +2,8 @@ import click
 import flask.cli
 from click import echo
 
-from flask_mongodb.models.shitfs import Shift, create_db_shift_history
+from flask_mongodb.models.shitfs.shift import Shift
+from flask_mongodb.models.shitfs.history import create_db_shift_history
 from .utils import add_new_collection, create_collection, start_database
 
 
@@ -20,7 +21,7 @@ def show_shifts(database):
     history = ShiftHistory()
     data = history.manager.all()
     
-    if data.count() < 1:
+    if data.count() == 0:
         echo('No history yet, execute the run command to make a history')
     else:
         for d in data:

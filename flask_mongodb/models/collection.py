@@ -1,15 +1,12 @@
-import typing as t
 import logging
-
+import typing as t
 from copy import deepcopy
 
-from bson import ObjectId
+from bson.json_util import dumps as bson_dumps
 
-from flask_mongodb.core.exceptions import CollectionException, FieldError
+from flask_mongodb.core.exceptions import CollectionException
 from flask_mongodb.core.wrappers import MongoCollection
-from flask_mongodb.models.fields import (EmbeddedDocumentField, EnumField,
-                                         ObjectIdField, ReferenceIdField,
-                                         StructuredArrayField)
+from flask_mongodb.models.fields import (EmbeddedDocumentField, ObjectIdField, ReferenceIdField, Field)
 from flask_mongodb.models.manager import CollectionManager, ReferenceManager
 
 logger = logging.getLogger(__name__)
@@ -23,9 +20,9 @@ class BaseCollection:
     validation_level: str = 'strict'
     manager_class = CollectionManager
     db_alias = 'main'
-    _id = ObjectIdField()
+    _id = ObjectIdField(allow_null=True, default=None)
     
-    def __init__(self) -> None:
+    def __init__(self, **field_values) -> None:
         self._fields: t.Dict = dict()
         self.__collection__: t.Optional[MongoCollection] = None
         if not self.manager_class:
@@ -38,19 +35,20 @@ class BaseCollection:
         
         # Prepare _fields attribute
         for name in dir(self):
-            if not name.startswith('_'):
-                attr = getattr(self, name)
-                if hasattr(attr, '_model_field'):
-                    # Copy the field
-                    self._fields[name] = deepcopy(attr)
-                    if hasattr(attr, '_reference'):
-                        attr: ReferenceIdField
-                        related_name = attr.related_name
-                        if related_name is None:
-                            related_name = str(self) + '_related'
-                        setattr(attr.model, related_name, ReferenceManager(self, name))
-                        setattr(self, f'{name}_id', ObjectIdField())
-                        self._fields[f'{name}_id'] = getattr(self, f'{name}_id')
+            attr = getattr(self, name)
+            if hasattr(attr, '_model_field'):
+                # Copy the field
+                self._fields[name] = deepcopy(attr)
+                if hasattr(attr, '_reference'):
+                    attr: ReferenceIdField
+                    related_name = attr.related_name
+                    if related_name is None:
+                        related_name = str(self) + '_related'
+                    setattr(attr.model, related_name, ReferenceManager(self, name))
+                    setattr(self, f'{name}_id', ObjectIdField())
+                    self._fields[f'{name}_id'] = getattr(self, f'{name}_id')
+
+        self._initial = {} if not field_values else field_values
 
     def __setitem__(self, __name: str, __value: t.Any):
         # Dict style assignment
@@ -58,12 +56,10 @@ class BaseCollection:
         
         if field is None:
             raise KeyError(f'CollectionModel does not field with name {__name}')
-        if hasattr(__value, '_model_data'):
-            raise ValueError('Cannot assign model field to this model field')
         
-        field.data = __value
+        field.set_data(__value)
         if hasattr(field, '_reference'):
-            self.fields[f'{__name}_id'].data = __value
+            self.fields[f'{__name}_id'].set_data(__value)
 
     def __getitem__(self, __name: str):
         # Dict style getting
@@ -78,7 +74,7 @@ class BaseCollection:
         attr = super().__getattribute__(__name)
         if hasattr(attr, '_reference_manager'):
             attr.reference_id = self['_id']
-        return attr 
+        return attr
     
     def __getattr__(self, __name):
         return super().__getattr__(__name)
@@ -107,188 +103,42 @@ class BaseCollection:
         memo[id(self)] = obj
         for k, v in self.__dict__.items():
             setattr(obj, k, deepcopy(v, memo))
+        obj._connected = False
         return obj
-    
-    def __define_validators__(self):
-        """
-        DEPRECATED: This method will be removed as of version 2
-        """
-        validators = {
-            '$jsonSchema': {
-                "bsonType": "object",
-                "required": [],
-                "properties": {}
-            }
-        }
+
+    def _incoming_data_to_fields(self):
+        for name in self.fields.keys():
+            value = self._initial.get(name)
+            if value is None:
+                # Ignore fields that do not exist
+                continue
+            self[name] = value
+
+        # Check for reference fields
         for name, field in self.fields.items():
-            if isinstance(field, ReferenceIdField):
-                # If field is a ReferenceIdField, it will be ignored and it's counterpart [name]_id
-                # will be used
-                continue
-            
-            if hasattr(field, '_reference_manager'):
-                # Do not consider reference managers
-                continue
-            
-            if field.required:
-                validators["$jsonSchema"]["required"].append(name)
-            
-            validators['$jsonSchema']['properties'][name] = {}
-            
-            # Defining field BSON types
-            if field.bson_type is not None:
-                # If bson_type attrib is not None, add it to the bson_types
-                # Need to copy to avoid refrence modifications
-                validators['$jsonSchema']["properties"][name].update({"bsonType": deepcopy(field.bson_type)})
+            if hasattr(field, '_reference'):
+                id_field_of_ref = self[name + '_id']
+                if str(field.data) != str(id_field_of_ref):
+                    field.set_data(id_field_of_ref)
 
-                # Check if null is allowed and add it
-                if field.allow_null:
-                    validators["$jsonSchema"]["properties"][name]["bsonType"].append('null')
+    def modified_fields(self) -> t.Dict[str, t.Union[Field, EmbeddedDocumentField]]:
+        def _traverse_embedded_document(change_obj: t.Dict, _name: str, _field: t.Union[Field, EmbeddedDocumentField]):
+            for prop_name, prop_field in _field.properties.items():
+                _path = f'{_name}.{prop_name}'
+                if isinstance(prop_field, EmbeddedDocumentField):
+                    _traverse_embedded_document(change_obj, prop_name, prop_field)
+                else:
+                    if prop_field.initial != prop_field.data:
+                        change_obj[_path] = prop_field.data
 
-            # Add min_length if it has it, applies only to StringField and PasswordField
-            if min_length := getattr(field, 'min_length', None):
-                validators["$jsonSchema"]["properties"][name].update({'minLength': min_length})
-            
-            # Add max_length if it has it
-            if max_length := getattr(field, 'max_length', None):
-                validators["$jsonSchema"]["properties"][name].update({'maxLength': max_length})
-            
-            if field.description:
-                validators["$jsonSchema"]["properties"][name].update({'description': field.description})
-            
-            if isinstance(field, EnumField):
-                enums = self._enum_field_validators(field)
-                validators['$jsonSchema']['properties'][name].update({'enum': enums})
-            elif isinstance(field, EmbeddedDocumentField):
-                embedded_validators = self._embedded_document_validators(field)
-                validators['$jsonSchema']['properties'][name].update(embedded_validators)
-            elif isinstance(field, StructuredArrayField):
-                structured_array_validators = self._structured_array_validators(field)
-                validators['$jsonSchema']['properties'][name].update(structured_array_validators)
+        change = {}
+        for name, field in self._fields.items():
+            if isinstance(field, EmbeddedDocumentField):
+                _traverse_embedded_document(change, name, field)
             else:
-                # It's another field, continue on
-                pass
-        
-        if not validators['$jsonSchema'].get('required'):
-            validators['$jsonSchema'].pop('required')  # Remove required field if empty list
-        return validators if validators['$jsonSchema']['properties'] else {}
-    
-    def _enum_field_validators(self, field):
-        if field.bson_type is not None:
-            raise FieldError('The enum of the EnumField will establish the valid types')
-        
-        enum = {'enum': field.enum}
-        if field.allow_null:
-            enum['enum'].append('null')
-        return enum['enum']
-    
-    def _embedded_document_validators(self, field: EmbeddedDocumentField):
-        sub_validators = {
-            "bsonType": ['object'],
-            "required": [],
-            "properties": {}
-        }
-        
-        if field.allow_null:
-            sub_validators['bsonType'].append('null')
-        
-        for prop_name, prop_field in field.properties.items():
-            if prop_field.required:
-                sub_validators["required"].append(prop_name)
-            
-            sub_validators['properties'][prop_name] = {}
-            
-            # Defining field BSON types
-            if prop_field.bson_type is not None:
-                sub_validators["properties"][prop_name].update({"bsonType": deepcopy(prop_field.bson_type)})
-
-                # If has BSON Type, check if null is allowed and add it
-                if prop_field.allow_null:
-                    sub_validators['properties'][prop_name]["bsonType"].append('null')
-            
-            if max_length := getattr(prop_field, 'max_length', None):
-                sub_validators["properties"][prop_name].update({'maxLength': max_length})
-
-            if min_length := getattr(prop_field, 'min_length', None):
-                sub_validators["properties"][prop_name].update({'minLength': min_length})
-            
-            if prop_field.description:
-                sub_validators['properties'][prop_name].update({'description': prop_field.description})
-            
-            if isinstance(prop_field, EnumField):
-                in_enum = self._enum_field_validators((prop_field))
-                sub_validators['properties'][prop_name].update(enum=in_enum)
-            elif isinstance(prop_field, EmbeddedDocumentField):
-                # Support for Embedded documents in embedded documents
-                sub_sub_validators = self._embedded_document_validators(prop_field)
-                sub_validators['properties'][prop_name].update(sub_sub_validators)
-            elif isinstance(prop_field, StructuredArrayField):
-                struc_array_validators = self._structured_array_validators(prop_field)
-                sub_validators['properties'][prop_name].update(struc_array_validators)
-            else:
-                # It's another field, continue on
-                pass
-    
-        if not sub_validators['required']:
-            sub_validators.pop('required', None)  # If required field empty, remove it
-        
-        return sub_validators
-
-    def _structured_array_validators(self, field: StructuredArrayField):
-        field_properties = {}
-        if min_items := getattr(field, 'min_items', None):
-            field_properties.update({'min_items': min_items})
-        
-        if max_items := getattr(field, 'max_items', None):
-            field_properties.update({'max_items': max_items})
-        
-        items = {
-            'bsonType': ['object'],
-            'required': [],
-            'properties': {}
-        }
-        
-        for item_name, item_field in field.items.items():
-            if item_field.required:
-                items['required'].append(item_name)
-            
-            items['properties'][item_name] = {}
-            
-            if item_field.bson_type is not None:
-                items['properties'][item_name].update({'bsonType': deepcopy(item_field.bson_type)})
-                
-                if item_field.allow_null:
-                    items[item_name]['properties']['bsonType'].append('null')
-            
-            # Add max_length if it has it
-            if max_length := getattr(item_field, 'max_length', None):
-                items["properties"][item_name].update({'maxLength': max_length})
-
-            # Add min_length if it has it
-            if min_length := getattr(item_field, 'min_length', None):
-                items["properties"][item_name].update({'minLength': min_length})
-            
-            if item_field.description:
-                items['properties'][item_name].update(description=item_field.description)
-            
-            if isinstance(item_field, EmbeddedDocumentField):
-                sub_validators = self._embedded_document_validators(item_field)
-                items['properties'][item_name].update(sub_validators)
-            elif isinstance(item_field, EnumField):
-                in_enum = self._enum_field_validators(item_field)
-                items['properties'][item_name].update({'enum': in_enum})
-            elif isinstance(item_field, StructuredArrayField):
-                struc_array_validators = self._structured_array_validators(item_field)
-                items['properties'][item_name].update(struc_array_validators)
-            else:
-                # It's another field, continue on
-                pass
-        
-        if not items['required']:
-            items.pop('required', None)
-        
-        field_properties.update(items=items)
-        return field_properties
+                if field.data != field.initial:
+                    change[name] = field.data
+        return change
 
     @property
     def manager(self) -> CollectionManager:
@@ -306,9 +156,6 @@ class BaseCollection:
     def pk(self, value):
         self._id.data = value
     
-    def get_collection_schema(self):
-        return self.__define_validators__()
-    
     def connect(self):
         """Connect directly to the MongoDB Collection"""
         if self._connected:
@@ -323,12 +170,13 @@ class BaseCollection:
         self.__collection__ = None
         self._connected = False
 
+    def save(self, session=None, bypass_validation=False, comment=None):
+        return self.manager.run_save(session, bypass_validation, comment)
+
 
 class CollectionModel(BaseCollection):
     def __init__(self, **field_values):
-        self._initial = {} if not field_values else field_values
-        self._update = {}
-        super(CollectionModel, self).__init__()
+        super(CollectionModel, self).__init__(**field_values)
         
         if not self.collection_name:
             raise CollectionException('Need to specify the collection_name')
@@ -342,60 +190,44 @@ class CollectionModel(BaseCollection):
             setattr(self, name, field)
         
         if self._initial:
-            self.__assign_data_to_fields__()
+            self._incoming_data_to_fields()
         
         self.schema_validators = None
-    
-    def __assign_data_to_fields__(self):
-        for name in self.fields.keys():
-            value = self._initial.get(name)
-            if value is None:
-                # Ignore fields that do not exist
-                continue
-            self[name] = value
-            if hasattr(self.fields[name], '_reference') and self.fields[name].data:
-                self[f'{name}_id'] = value
-        
-        # Check for reference fields
-        for name, field in self.fields.items():
-            if hasattr(field, '_reference'):
-                id_field_of_ref = self[name + '_id']
-                if str(field.data) != str(id_field_of_ref):
-                    field.data = id_field_of_ref
-    
-    def data(self, as_str=False, exclude=(), include_reference=True, include_all_references=False):
-        """DEPRECATED; This method will be remove in version 2"""
-        
-        logger.warning('DEPRECATED: The `data` method is deprecated and will be removed in version 2')
-        _data = {}
+
+    def to_document(self, json_parsed=False, exclude=tuple()):
+        def _get_embedded_document(document_obj: t.Dict, _field_name: str,
+                                   _field: t.Union[EmbeddedDocumentField, Field]):
+            document_obj[_field_name] = {}
+            for prop_name, prop_field in _field.properties.items():
+                if isinstance(_field, EmbeddedDocumentField):
+                    _get_embedded_document(document_obj[_field_name], prop_name, prop_field)
+                else:
+                    document[name][prop_name] = prop_field.data
+
+        document = {}
         for name, field in self.fields.items():
             if name in exclude:
-                # Go to next field
-                continue
-            
+                continue  # Go to next one
             if isinstance(field, EmbeddedDocumentField):
-                _data[name] = {}
-                for prop_name, prop_field in field.properties.items():
-                    _data[name][prop_name] = prop_field.data if not as_str else str(prop_field.data)
-            elif isinstance(field, ReferenceIdField) and include_reference:
+                _get_embedded_document(document, name, field)
+            elif isinstance(field, ReferenceIdField):
                 ref = field.reference
                 if ref is None:
-                    # CONSIDER: If best option is to raise and error
-                    _data[name] = ref
-                    continue  # Go to next field
-                _data[name] = field.reference.data(as_str, exclude,
-                                                   include_reference=include_all_references,
-                                                   include_all_references=include_all_references)
-            else:
-                if isinstance(field, ReferenceIdField):
-                    # If the field is a reference field, do not get the data
+                    # TODO: This should raise an error since the object referenced by another must not be deleted before
+                    # TODO: the one referencing
+                    document[name] = ref
                     continue
-                _data[name] = field.data if not as_str else str(field.data)
-        return _data
+                document[name] = ref.pk
+            else:
+                document[name] = field.data
+
+        if json_parsed:
+            return bson_dumps(document)
+        return document
 
     def set_model_data(self, data: dict):
         self._initial = data
-        self.__assign_data_to_fields__()
+        self._incoming_data_to_fields()
     
     @property
     def collection(self) -> t.Union[MongoCollection, None]:

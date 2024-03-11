@@ -19,8 +19,6 @@ def _enum_field_validators(field):
         raise FieldError('The enum of the EnumField will establish the valid types')
     
     enum = {'enum': field.enum}
-    if field.allow_null:
-        field.bson_type = ['null']
     return enum['enum']
 
 
@@ -81,28 +79,28 @@ def _structured_array_validators(field: StructuredArrayField):
         field_properties = {}
         if min_items := getattr(field, 'min_items', None):
             field_properties.update({'min_items': min_items})
-        
+
         if max_items := getattr(field, 'max_items', None):
             field_properties.update({'max_items': max_items})
-        
+
         items = {
             'bsonType': ['object'],
             'required': [],
             'properties': {}
         }
-        
+
         for item_name, item_field in field.items.items():
             if item_field.required:
                 items['required'].append(item_name)
-            
+
             items['properties'][item_name] = {}
-            
+
             if item_field.bson_type is not None:
                 items['properties'][item_name].update({'bsonType': deepcopy(item_field.bson_type)})
-                
+
                 if item_field.allow_null:
                     items[item_name]['properties']['bsonType'].append('null')
-            
+
             # Add max_length if it has it
             if max_length := getattr(item_field, 'max_length', None):
                 items["properties"][item_name].update({'maxLength': max_length})
@@ -110,10 +108,10 @@ def _structured_array_validators(field: StructuredArrayField):
             # Add min_length if it has it
             if min_length := getattr(item_field, 'min_length', None):
                 items["properties"][item_name].update({'minLength': min_length})
-            
+
             if item_field.description:
                 items['properties'][item_name].update(description=item_field.description)
-            
+
             if isinstance(item_field, EmbeddedDocumentField):
                 sub_validators = _embedded_document_validators(item_field)
                 items['properties'][item_name].update(sub_validators)
@@ -126,10 +124,10 @@ def _structured_array_validators(field: StructuredArrayField):
             else:
                 # It's another field, continue on
                 pass
-        
+
         if not items['required']:
             items.pop('required', None)
-        
+
         field_properties.update(items=items)
         return field_properties
 
@@ -160,7 +158,7 @@ def define_schema_validator(model_instance):
         # Defining field BSON types
         if field.bson_type is not None:
             # If bson_type attrib is not None, add it to the bson_types
-            # Need to copy to avoid refrence modifications
+            # Need to copy to avoid reference modifications
             validators['$jsonSchema']["properties"][name].update({"bsonType": deepcopy(field.bson_type)})
 
             # Check if null is allowed and add it
@@ -224,7 +222,7 @@ def start_database(mongo: MongoDB, app: Flask, database='all'):
         models = import_string(mod)
         models_list.append(models)
     
-    # Itereate over the list and register the models
+    # Iterate over the list and register the models
     for m in models_list:
         module_contents = dir(m)  # Get contents of the module
         for cont in module_contents:
@@ -279,6 +277,6 @@ def add_new_collection(mongo: MongoDB, app: Flask, database):
         shift_model.set_model_data({
             'db_collection': 'Added collections: ' + ', '.join(collections_added)
         })
-        shift_model.manager.insert_one(shift_model.data())
+        shift_model.save()
 
     return True
