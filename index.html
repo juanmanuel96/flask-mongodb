@@ -33,10 +33,7 @@
     <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
           <a href="." class="icon icon-home"> Flask-MongoDB
-        </a>
-        <div class="version">
-          v0.1.0
-        </div><div role="search">
+        </a><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
       <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
   </form>
@@ -62,10 +59,12 @@
     </ul>
                 </li>
               </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="mongo/">The MongoDB Class</a>
+                </li>
+              </ul>
               <p class="caption"><span class="caption-text">Database Operations</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="mongo/">The MongoDB Class</a>
-                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="collections/">Models</a>
                   </li>
               </ul>
@@ -117,9 +116,9 @@
 <p>Flask-MongoDB is a Flask extension for connecting one or more MongoDB databases to a Flask instance. This extension also includes collection model classes, model view, serializers, and model serializers.</p>
 <h2 id="installation">Installation</h2>
 <p>Currently, the package is not in pip. However, you can install the package with pip by pulling from GitHub with the following command: </p>
-<pre><code>pip install git+https://github.com/juanmanuel96/flask-mongodb@v0.1.0
+<pre><code>pip install git+https://github.com/juanmanuel96/flask-mongodb
 </code></pre>
-<p>If you wish to install a specific version, change the <code>v0.1.0</code> by whichever you want or remove it entirely to pull the latest code from the <code>main</code> branch. </p>
+<p>This will install the latest stable version of the package.</p>
 <h2 id="quick-start">Quick Start</h2>
 <p>This quick start guide will help you set up a Flask application with Flask-MongoDB.</p>
 <h3 id="configuration">Configuration</h3>
@@ -214,5 +213,5 @@ mongo = MongoDB()
 
 <!--
 MkDocs version : 1.5.3
-Build Date UTC : 2024-03-09 17:12:14.495672+00:00
+Build Date UTC : 2024-03-15 03:30:17.586255+00:00
 -->

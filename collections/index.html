@@ -33,10 +33,7 @@
     <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
           <a href=".." class="icon icon-home"> Flask-MongoDB
-        </a>
-        <div class="version">
-          v0.1.0
-        </div><div role="search">
+        </a><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
       <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
   </form>
@@ -48,10 +45,12 @@
                 <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
                 </li>
               </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../mongo/">The MongoDB Class</a>
+                </li>
+              </ul>
               <p class="caption"><span class="caption-text">Database Operations</span></p>
               <ul class="current">
-                  <li class="toctree-l1"><a class="reference internal" href="../mongo/">The MongoDB Class</a>
-                  </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="./">Models</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#the-collection-metadata">The collection metadata</a>
@@ -68,13 +67,23 @@
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#adding-a-field-to-the-model">Adding a field to the model</a>
     </li>
+    <li class="toctree-l4"><a class="reference internal" href="#creating-a-customfield">Creating a CustomField</a>
+    </li>
         </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#the-save-method">The save method</a>
     </li>
         </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#making-queries">Making queries</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#collection-manager">Collection Manager</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#read-queries">Read queries</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#write-queries">Write Queries</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#referencemanager">ReferenceManager</a>
     </li>
@@ -142,7 +151,7 @@
 <h2 id="a-collections-fields-or-schema">A collection's fields or schema</h2>
 <p>A model's fields are what define the schema of the collection. The schema of the collection are basically the keys most or all documents in the collection have. Fields by default will require some form of data. If the required flag is removed, it could be saved with a <code>None</code> value or some other default value. Future versions will include better methods for creating models where some can have very strict schemas while others have no schema at all, meaning the use of fields or dynamic assignments of fields. Currently, a model must have at least one field defined. </p>
 <h2 id="creating-a-model">Creating a model</h2>
-<p>As explained in the previous section, the <code>MODELS</code> configuration searches for the models module inside the package path in the list. This configuration is a list of packages or locations where a <code>models.py</code> file or package exists.</p>
+<p>As explained in the previous section, the <code>MODELS</code> configuration searches for the models module inside the package path in the list. This configuration is a list of packages or locations where a <code>models.py</code> file or <code>models</code> package exists.</p>
 <h3 id="the-collectionmodel">The CollectionModel</h3>
 <p>Inside a models module, you would need to create your model class which must inherit from the <code>CollectionModel</code> class of Flask-MongoDB.</p>
 <pre><code class="language-python">from flask_mongodb.models import CollectionModel
@@ -181,16 +190,25 @@ class BlogPost(CollectionModel):
     body = fields.StringField(min_length=25, max_length=1000)
 </code></pre>
 <p>This is all that is required to create a model.</p>
+<h4 id="creating-a-customfield">Creating a CustomField</h4>
+<p>You can create your own type of fields by creating a new class that inherits from any of the predefined fields or from the Field class. You will need to at least modify the <code>validate_data</code> method to apply field validation to your custom field. The <code>set_data</code> method can also be modified to add some custom logic before setting the field's data. Note that the <code>bson_tyoe</code> will be set to <code>None</code> by default. If you wish to add a BSON type for your custom filed, such as <code>string</code>, then you must set the <code>bson_type</code> class attribute a list of valid BSON types your custom field will accept.</p>
+<h3 id="the-save-method">The save method</h3>
+<p>The CollectionModel class has a save method that will take care of inserting and updating the collection document. When you instantiate a CollectionModel, the <code>_id</code> field data is set to None by default. Executing the <code>save</code> method will evaluate the <code>_id</code> field. If it has a value other than <code>None</code> it will attempt to update the document with the new data. If it is <code>None</code>, then it will run an insert action and update the instance's <code>_id</code> field with the new ObjectId value. The method will return the pymongo result.</p>
 <h2 id="making-queries">Making queries</h2>
 <p>MongoDB querying system uses JSON to make DB queries. Collection models instances come with a manager attribute which can run queries. The methods for running queries with the manager have the same name as the Collection instance from pymongo.</p>
 <h3 id="collection-manager">Collection Manager</h3>
-<p>The <code>manager</code> attribute is an instance of the <code>CollectionManager</code> class. This class has a single attribute which is the model itself. The collection manager has the task of making every query to the database. As mentioned above, the manager implements the same querying as pymongo but modified to meet the requirements of Flask-MongoDB. The queries are:</p>
+<p>The <code>manager</code> attribute is an instance of the <code>CollectionManager</code> class. The collection manager has the task of making every query to the database. As mentioned above, the manager implements the same querying as pymongo but modified to meet the requirements of Flask-MongoDB. </p>
+<p>Queries can be divided into two groups: reads and writes.</p>
+<h4 id="read-queries">Read queries</h4>
 <ul>
 <li><code>find</code>: Returns a document set of copies of the model with the corresponding document values</li>
 <li><code>find_one</code>: Returns a single model copy with the corresponding document values</li>
-<li><code>insert_one</code>: Inserts one single document into the collection</li>
-<li><code>update_one</code>: Updates only one document in the collection, default update type is <code>$set</code></li>
-<li><code>delete_one</code>: Deletes a single document in the collection</li>
+</ul>
+<h4 id="write-queries">Write Queries</h4>
+<ul>
+<li><code>insert_one</code>: Inserts one single document into the collection and returns a representation of the model</li>
+<li><code>update_one</code>: Updates only one document in the collection, default update type is <code>$set</code>, returns a representation of the model</li>
+<li><code>delete_one</code>: Deletes a single document in the collection, returns the pymongo result</li>
 </ul>
 <h3 id="referencemanager">ReferenceManager</h3>
 <p>The ReferenceManager class is another manager, but for reverse references. A reverse reference is when Model A references Model B, with the reference manager Model B will have access to Model A data after instantiating the model. This manager only supports the <code>find</code> and <code>find_one</code> query methods.</p>

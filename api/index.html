@@ -33,10 +33,7 @@
     <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
           <a href=".." class="icon icon-home"> Flask-MongoDB
-        </a>
-        <div class="version">
-          v0.1.0
-        </div><div role="search">
+        </a><div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
       <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
   </form>
@@ -48,10 +45,12 @@
                 <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
                 </li>
               </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../mongo/">The MongoDB Class</a>
+                </li>
+              </ul>
               <p class="caption"><span class="caption-text">Database Operations</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../mongo/">The MongoDB Class</a>
-                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../collections/">Models</a>
                   </li>
               </ul>
@@ -119,23 +118,6 @@
 <h2 id="the-mongodb-object">The MongoDB object</h2>
 <p><em>class</em> <span class='py_class'>flask_mongodb.MongoDB</span>(<em>app=None</em>)</p>
 <p>The MongoDB object connects your Flask instance to a MongoDB server. To configure the application, you may pass the Flask app during the instantiation of the MongoDB object or using the <code>init_app</code> method.</p>
-<p><em>meth</em> <span class="class_attr">init_app</span>(<em>app</em>)</p>
-<p>Configures the Flask instance with the MongoDB instance. This is the prefered method of configuration, especially when using the app factory method.</p>
-<p><em>meth</em> <span class="class_attr">register_collection</span>(<em>collection_cls</em>)</p>
-<p><strong>DEPRECATED</strong></p>
-<p>Registers a collection model to the MongoDB instance. </p>
-<p>** Parameters **</p>
-<ul>
-<li><code>collection_cls</code>: Class of the model desired to be registered</li>
-</ul>
-<p><em>meth</em> <span class="class_attr">get_collection</span>(<em>collection</em>, <em>default=None</em>)</p>
-<p><strong>DEPRECATED</strong></p>
-<p>Retrieves registered collection model If the model is not registered, will return <code>None</code>. </p>
-<p>** Parameters **</p>
-<ul>
-<li><code>collection</code>: Class of the model instance desired to be retrieved</li>
-<li><code>default</code>: The default value to be returned if the collection is not registered</li>
-</ul>
 <p><em>meth</em> <span class="class_attr">disconnect</span>(<em>using='main'</em>)</p>
 <p>Closes the connection of the desired database by alias.</p>
 <p>** Parameters **</p>
@@ -159,8 +141,12 @@
 <p>MongoDB collection validation level.</p>
 <p><em>attr</em> <span class="class_attr">manager_class</span>=<span class="class_attr">CollectionManager</span></p>
 <p>Manager class for the collection.</p>
-<p><em>meth</em> <span class="class_attr">get_collection_schema</span>()</p>
-<p>Get the collection schema in JSON format.</p>
+<p><em>property</em> <span class="class_attr">manager</span></p>
+<p>Property for the manager instance. </p>
+<p><em>proterty</em> <span class="class_attr">fields</span></p>
+<p>Property for the model's fields.</p>
+<p><em>property</em> <span class="class_attr">pk</span></p>
+<p>Property for the _id field of the model, the primary key.</p>
 <p><em>meth</em> <span class="class_attr">connect</span>()</p>
 <p>Create a connection between your model and the collection. </p>
 <blockquote>
@@ -168,24 +154,14 @@
 </blockquote>
 <p><em>meth</em> <span class="class_attr">disconnect</span>()</p>
 <p>Disconnect your model from the collection.</p>
-<p><em>property</em> <span class="class_attr">manager</span></p>
-<p>Property for the manager instance. </p>
-<p><em>proterty</em> <span class="class_attr">fields</span></p>
-<p>Property for the model's fields.</p>
-<p><em>property</em> <span class="class_attr">pk</span></p>
-<p>Property for the _id field of the model, the primary key.</p>
-<p><em>class</em> <span class="py_class">flask_mongodb.CollectionModel</span>(<em>**field_values</em>)</p>
-<p>Inherits from BaseCollection. Base class for all your models to inherit from. Use keyword arguments to give initial values to your deseried fields.</p>
-<p><em>meth</em> <span class="class_attr">data</span>(<em>as_str=False, exclude=(), include_reference=True, include_all_references=False</em>)</p>
-<p><strong>Deprecated</strong></p>
-<p>Returns a dict-like representation of the model fields and its values.</p>
-<p>** Properties **</p>
+<p><em>meth</em> <span class="class_attr">save</span>(<em>bypass_validation=False</em>)</p>
+<p>Save model data in the data base.</p>
+<p>** Parameters **</p>
 <ul>
-<li><code>as_str</code>: Return the model data as a string, default <code>False</code></li>
-<li><code>exclude</code>: Exclude fields from the returned dictionary</li>
-<li><code>include_reference</code>: Include first level of referenced model's data, default <code>True</code></li>
-<li><code>include_all_references</code>: Include all levels of refrences (data from models that have references), default <code>False</code></li>
+<li><code>bypass_validation</code>: Bypass document validation at the database level. While the option is available, it should be use as little as possible to avoid bad data in database.</li>
 </ul>
+<p><em>class</em> <span class="py_class">flask_mongodb.CollectionModel</span>(<em>**field_values</em>)</p>
+<p>Inherits from BaseCollection. Base class for all your models to inherit from. Use keyword arguments to give initial values to your desired fields.</p>
 <p><em>meth</em> <span class="class_attr">set_model_data</span>(<em>data</em>)</p>
 <p>Sets the model fields values with the provided data. The <code>data</code> parameter must be a dictionary where the keys must be strings.</p>
 <p>** Parameters **</p>
