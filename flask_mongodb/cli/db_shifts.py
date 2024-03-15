@@ -4,7 +4,7 @@ from click import echo
 
 from flask_mongodb.models.shitfs.shift import Shift
 from flask_mongodb.models.shitfs.history import create_db_shift_history
-from .utils import add_new_collection, create_collection, start_database
+from flask_mongodb.cli.utils import add_new_collection, create_collection, start_database
 
 
 @click.group('shift', help='Shift the database to make changes')

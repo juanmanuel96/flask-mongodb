@@ -1,8 +1,11 @@
+import os.path
+
 import pytest
 from click.testing import CliRunner
 from flask import Flask
 
 from flask_mongodb import MongoDB
+from flask_mongodb.cli.cli import create_model
 from flask_mongodb.cli.db_shifts import db_shift
 from flask_mongodb.core.wrappers import MongoConnect
 from tests.utils import DB_NAME, MAIN
@@ -106,3 +109,18 @@ def test_add_collection(app: Flask):
         except Exception:
             res = False
     assert res, "Failed to create collection"
+
+
+def test_create_model():
+    runner = CliRunner()
+    runner.invoke(create_model)
+
+    models_path = os.path.abspath(os.getcwd() + '/models.py')
+
+    exists = os.path.exists(models_path)
+    with open(models_path, 'r') as models_file:
+        content_valid = 'CollectionModel' in models_file.read()
+
+    os.remove(models_path)
+
+    assert exists and content_valid
