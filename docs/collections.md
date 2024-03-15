@@ -14,7 +14,7 @@ A model's fields are what define the schema of the collection. The schema of the
 
 ## Creating a model
 
-As explained in the previous section, the `MODELS` configuration searches for the models module inside the package path in the list. This configuration is a list of packages or locations where a `models.py` file or package exists.
+As explained in the previous section, the `MODELS` configuration searches for the models module inside the package path in the list. This configuration is a list of packages or locations where a `models.py` file or `models` package exists.
 
 ### The CollectionModel
 
@@ -69,19 +69,34 @@ class BlogPost(CollectionModel):
 
 This is all that is required to create a model.
 
+#### Creating a CustomField
+
+You can create your own type of fields by creating a new class that inherits from any of the predefined fields or from the Field class. You will need to at least modify the `validate_data` method to apply field validation to your custom field. The `set_data` method can also be modified to add some custom logic before setting the field's data. Note that the `bson_tyoe` will be set to `None` by default. If you wish to add a BSON type for your custom filed, such as `string`, then you must set the `bson_type` class attribute a list of valid BSON types your custom field will accept.
+
+### The save method
+
+The CollectionModel class has a save method that will take care of inserting and updating the collection document. When you instantiate a CollectionModel, the `_id` field data is set to None by default. Executing the `save` method will evaluate the `_id` field. If it has a value other than `None` it will attempt to update the document with the new data. If it is `None`, then it will run an insert action and update the instance's `_id` field with the new ObjectId value. The method will return the pymongo result.
+
 ## Making queries
 
 MongoDB querying system uses JSON to make DB queries. Collection models instances come with a manager attribute which can run queries. The methods for running queries with the manager have the same name as the Collection instance from pymongo.
 
 ### Collection Manager
 
-The `manager` attribute is an instance of the `CollectionManager` class. This class has a single attribute which is the model itself. The collection manager has the task of making every query to the database. As mentioned above, the manager implements the same querying as pymongo but modified to meet the requirements of Flask-MongoDB. The queries are:
+The `manager` attribute is an instance of the `CollectionManager` class. The collection manager has the task of making every query to the database. As mentioned above, the manager implements the same querying as pymongo but modified to meet the requirements of Flask-MongoDB. 
+
+Queries can be divided into two groups: reads and writes.
+
+#### Read queries
 
 - `find`: Returns a document set of copies of the model with the corresponding document values
 - `find_one`: Returns a single model copy with the corresponding document values
-- `insert_one`: Inserts one single document into the collection
-- `update_one`: Updates only one document in the collection, default update type is `$set`
-- `delete_one`: Deletes a single document in the collection
+
+#### Write Queries
+
+- `insert_one`: Inserts one single document into the collection and returns a representation of the model
+- `update_one`: Updates only one document in the collection, default update type is `$set`, returns a representation of the model
+- `delete_one`: Deletes a single document in the collection, returns the pymongo result
 
 ### ReferenceManager
 

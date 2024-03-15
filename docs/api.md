@@ -8,32 +8,6 @@ _class_ <span class='py_class'>flask_mongodb.MongoDB</span>(_app=None_)
 
 The MongoDB object connects your Flask instance to a MongoDB server. To configure the application, you may pass the Flask app during the instantiation of the MongoDB object or using the `init_app` method.
 
-_meth_ <span class="class_attr">init_app</span>(_app_)
-
-Configures the Flask instance with the MongoDB instance. This is the prefered method of configuration, especially when using the app factory method.
-
-_meth_ <span class="class_attr">register_collection</span>(_collection_cls_)
-
-**DEPRECATED**
-
-Registers a collection model to the MongoDB instance. 
-
-** Parameters **
-
-- `collection_cls`: Class of the model desired to be registered
-
-_meth_ <span class="class_attr">get_collection</span>(_collection_, _default=None_)
-
-**DEPRECATED**
-
-Retrieves registered collection model If the model is not registered, will return `None`. 
-
-** Parameters **
-
-- `collection`: Class of the model instance desired to be retrieved
-- `default`: The default value to be returned if the collection is not registered
-
-
 _meth_ <span class="class_attr">disconnect</span>(_using='main'_)
 
 Closes the connection of the desired database by alias.
@@ -76,20 +50,6 @@ _attr_ <span class="class_attr">manager_class</span>=<span class="class_attr">Co
 
 Manager class for the collection.
 
-_meth_ <span class="class_attr">get_collection_schema</span>()
-
-Get the collection schema in JSON format.
-
-_meth_ <span class="class_attr">connect</span>()
-
-Create a connection between your model and the collection. 
-
-> **NOTE:** This requires your application to be at the top of the context stack.
-
-_meth_ <span class="class_attr">disconnect</span>()
-
-Disconnect your model from the collection.
-
 _property_ <span class="class_attr">manager</span>
 
 Property for the manager instance. 
@@ -102,22 +62,27 @@ _property_ <span class="class_attr">pk</span>
 
 Property for the _id field of the model, the primary key.
 
+_meth_ <span class="class_attr">connect</span>()
+
+Create a connection between your model and the collection. 
+
+> **NOTE:** This requires your application to be at the top of the context stack.
+
+_meth_ <span class="class_attr">disconnect</span>()
+
+Disconnect your model from the collection.
+
+_meth_ <span class="class_attr">save</span>(_bypass_validation=False_)
+
+Save model data in the data base.
+
+** Parameters **
+
+- `bypass_validation`: Bypass document validation at the database level. While the option is available, it should be use as little as possible to avoid bad data in database.
+
 _class_ <span class="py_class">flask_mongodb.CollectionModel</span>(_\*\*field_values_)
 
-Inherits from BaseCollection. Base class for all your models to inherit from. Use keyword arguments to give initial values to your deseried fields.
-
-_meth_ <span class="class_attr">data</span>(_as_str=False, exclude=(), include_reference=True, include_all_references=False_)
-
-**Deprecated**
-
-Returns a dict-like representation of the model fields and its values.
-
-** Properties **
-
-* `as_str`: Return the model data as a string, default `False`
-* `exclude`: Exclude fields from the returned dictionary
-* `include_reference`: Include first level of referenced model's data, default `True`
-* `include_all_references`: Include all levels of refrences (data from models that have references), default `False`
+Inherits from BaseCollection. Base class for all your models to inherit from. Use keyword arguments to give initial values to your desired fields.
 
 _meth_ <span class="class_attr">set_model_data</span>(_data_)
 

@@ -4,8 +4,8 @@ repo_url: https://github.com/juanmanuel96/flask-mongodb
 
 nav:
   - Home : index.md
+  - The MongoDB Class: mongo.md
   - Database Operations:
-    - The MongoDB Class: mongo.md
     - Models: collections.md
   - Data Validation:
     - Serializing Data: serializers.md
@@ -22,11 +22,6 @@ theme:
 extra_css: 
   - stylesheet/extra.css
 
-extra: 
-  pkg_version: v0.1.0
-  version: v0.1.0
-
 plugins:
   - search
-  - markdownextradata
   - mike
