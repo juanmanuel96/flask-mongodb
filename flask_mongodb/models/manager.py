@@ -1,4 +1,5 @@
 import typing as t
+
 from bson import ObjectId
 from pymongo.client_session import ClientSession
 from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
@@ -33,10 +34,7 @@ class BaseManager:
         attr = super().__getattribute__(__name)
         if hasattr(attr, '_is_model'):
             attr.connect()
-        return attr 
-    
-    def __getattr__(self, __name):
-        return super().__getattr__(__name) 
+        return attr
     
     # Read operations
     def find(self, **filter):
@@ -80,19 +78,23 @@ class BaseManager:
 
         return ack
 
+    def run_delete(self, session: t.Optional[ClientSession] = None, comment: t.Optional[str] = None, **options):
+        ack = self._model.collection.delete_one({'_id': self._model.pk}, session=session, comment=comment,
+                                                **options)
+        return ack
+
     def insert_one(self, **insert_data):
-        if insert_data:
-            insert_data.pop('_id', None)
-            for key, value in insert_data.items():
-                field = getattr(self._model, key, None)
-                if field is None or not hasattr(field, '_model_field'):
-                    continue
-                field.set_data(value)
-        else:
-            # TODO: Custom Exception
+        if not insert_data:
             raise ValueError('Must provide data to insert')
-            
-        insert = self._model.to_document()
+
+        insert_data.pop('_id', None)
+        for key, value in insert_data.items():
+            field = getattr(self._model, key, None)
+            if field is None or not hasattr(field, '_model_field'):
+                continue
+            field.set_data(value)
+
+        insert = self._model.to_document(exclude=('_id',))
         ack = self._model.collection.insert_one(insert)
         self._model['_id'] = ack.inserted_id
         return self._model
@@ -125,13 +127,6 @@ class BaseManager:
         q = self._clean_query(**query)
         ack = self._model.collection.delete_many(q, **options)
         return ack
-    
-    # Aliases
-    get = find_one
-    create = insert_one
-    update = update_one
-    delete = delete_one
-    delete_all = delete_many
 
 
 class CollectionManager(BaseManager):

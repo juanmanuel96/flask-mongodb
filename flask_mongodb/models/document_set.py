@@ -1,6 +1,6 @@
 import typing as t
-
 from copy import deepcopy
+
 from pymongo.cursor import Cursor
 
 from flask_mongodb.core.mixins import InimitableObject
@@ -44,11 +44,25 @@ class DocumentSet(InimitableObject):
         m = self._model_representation(doc[-1])
         return m
     
-    def limit(self, number):
+    def limit(self, number: int):
+        """
+        Limit the number of elements.
+        :param number: Integer to limit the DocumentSet
+        :return: Self
+        """
         self.__cursor = self.__cursor.limit(number)
+        return self
     
-    def sort(self, key_or_list, direction=None):
-        self.__cursor = self.__cursor.sort(key_or_list, direction)
+    def sort(self, sorting: t.Tuple[t.Tuple[str, int]]):
+        """
+        Sort the DocumentSet by the sorting list. The sorting param must be a tuple of tuples, where the first
+        element is a field name and the second the sorting direction. For direction use :data:`pymongo.ASCENDING` or
+        :data:`pymongo.DESCENDING`.
+        :param sorting: Tuple of tuples of string and integer
+        :return: Self
+        """
+        self.__cursor = self.__cursor.sort(key_or_list=sorting)
+        return self
     
     def count(self):
         return len(list(self.__cursor.clone()))

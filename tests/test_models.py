@@ -72,7 +72,7 @@ class TestModelOperations(BaseAppSetup):
         ds = model.manager.find()
 
         assert all([isinstance(item, ModelForTest) for item in ds]), \
-            'All instaces must be of the ModelForTest'
+            'All instances must be of the ModelForTest'
 
     @pytest.mark.skip(reason='Collection is no longer inimitable')
     def test_inimitable_object(self):
@@ -82,13 +82,10 @@ class TestModelOperations(BaseAppSetup):
         assert instance.collection is None, \
             "It seems that the collection was imitated"
 
-    @pytest.mark.skip(reason='Tested in first insert, enable when insert management is improved')
+    # @pytest.mark.skip(reason='Tested in first insert, enable when insert management is improved')
     def test_required_field(self):
-        model = ModelForTest2()
-        model['body'] = 'This is the body'
-
         with pytest.raises(WriteError):
-            model.manager.insert_one()
+            ModelForTest2().manager.insert_one(body='This is the body')
 
     def test_update(self):
         model1 = ModelForTest()

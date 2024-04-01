@@ -21,7 +21,7 @@ class BaseCollection:
     manager_class = CollectionManager
     db_alias = 'main'
     _id = ObjectIdField(allow_null=True, default=None)
-    
+
     def __init__(self, **field_values) -> None:
         self._fields: t.Dict = dict()
         self.__collection__: t.Optional[MongoCollection] = None
@@ -32,7 +32,7 @@ class BaseCollection:
         setattr(self, 'db_alias', self.db_alias)
         self._fields['_id'] = self._id
         self._connected = False
-        
+
         # Prepare _fields attribute
         for name in dir(self):
             attr = getattr(self, name)
@@ -45,18 +45,20 @@ class BaseCollection:
                     if related_name is None:
                         related_name = str(self) + '_related'
                     setattr(attr.model, related_name, ReferenceManager(self, name))
+
+                    # Set model reference data
                     setattr(self, f'{name}_id', ObjectIdField())
                     self._fields[f'{name}_id'] = getattr(self, f'{name}_id')
 
-        self._initial = {} if not field_values else field_values
+        self._initial = {**field_values}
 
     def __setitem__(self, __name: str, __value: t.Any):
         # Dict style assignment
         field = self._fields.get(__name, None)
-        
+
         if field is None:
             raise KeyError(f'CollectionModel does not field with name {__name}')
-        
+
         field.set_data(__value)
         if hasattr(field, '_reference'):
             self.fields[f'{__name}_id'].set_data(__value)
@@ -69,34 +71,31 @@ class BaseCollection:
         if hasattr(field, '_reference'):
             return field.reference
         return field.data
-    
+
     def __getattribute__(self, __name: str) -> t.Any:
         attr = super().__getattribute__(__name)
         if hasattr(attr, '_reference_manager'):
             attr.reference_id = self['_id']
         return attr
-    
-    def __getattr__(self, __name):
-        return super().__getattr__(__name)
-    
+
     def __str__(self):
         return self.collection_name
-    
+
     def __iter__(self):
         return iter(self._fields.values())
-    
+
     def __repr__(self):
         return f"{self.__class__}.{self.collection_name}"
-    
+
     def __contains__(self, __name: str):
         return __name in self._fields
-    
+
     def __copy__(self):
         cls = self.__class__
         obj = cls.__new__(cls)
         obj.__dict__.update(self.__dict__)
         return obj
-    
+
     def __deepcopy__(self, memo):
         cls = self.__class__
         obj = cls.__new__(cls)
@@ -106,13 +105,15 @@ class BaseCollection:
         obj._connected = False
         return obj
 
-    def _incoming_data_to_fields(self):
-        for name in self.fields.keys():
-            value = self._initial.get(name)
+    def _incoming_data_to_fields(self, incoming: t.Dict, initial=False):
+        for name, field in self.fields.items():
+            value = incoming.get(name)
             if value is None:
                 # Ignore fields that do not exist
                 continue
-            self[name] = value
+            field.set_data(value)
+            if initial:
+                field.set_initial(value)
 
         # Check for reference fields
         for name, field in self.fields.items():
@@ -120,6 +121,24 @@ class BaseCollection:
                 id_field_of_ref = self[name + '_id']
                 if str(field.data) != str(id_field_of_ref):
                     field.set_data(id_field_of_ref)
+                    if initial:
+                        field.set_initial(id_field_of_ref)
+
+    @property
+    def manager(self) -> CollectionManager:
+        return self._manager
+
+    @property
+    def fields(self) -> dict:
+        return self._fields
+
+    @property
+    def pk(self):
+        return self._id.data
+
+    @pk.setter
+    def pk(self, value):
+        self._id.set_data(value)
 
     def modified_fields(self) -> t.Dict[str, t.Union[Field, EmbeddedDocumentField]]:
         def _traverse_embedded_document(change_obj: t.Dict, _name: str, _field: t.Union[Field, EmbeddedDocumentField]):
@@ -133,6 +152,9 @@ class BaseCollection:
 
         change = {}
         for name, field in self._fields.items():
+            if name == '_id':
+                # Skip _id field, it should not be considered as a modified field
+                continue
             if isinstance(field, EmbeddedDocumentField):
                 _traverse_embedded_document(change, name, field)
             else:
@@ -140,58 +162,48 @@ class BaseCollection:
                     change[name] = field.data
         return change
 
-    @property
-    def manager(self) -> CollectionManager:
-        return self._manager
-    
-    @property
-    def fields(self) -> dict:
-        return self._fields
-    
-    @property
-    def pk(self):
-        return self._id.data
-    
-    @pk.setter
-    def pk(self, value):
-        self._id.data = value
-    
     def connect(self):
-        """Connect directly to the MongoDB Collection"""
-        if self._connected:
-            # Don't connect again
-            return None
-        from flask_mongodb import current_mongo
-        db = current_mongo.connections[self.db_alias]
-        self.__collection__ = MongoCollection(db, self.collection_name)
-        self._connected = True
-    
+        """
+        Connect to the MongoDB Collection
+        """
+        if not self._connected:
+            from flask_mongodb import current_mongo
+            db = current_mongo.connections[self.db_alias]
+            self.__collection__ = MongoCollection(db, self.collection_name)
+            self._connected = True
+
+        return self
+
     def disconnect(self):
         self.__collection__ = None
         self._connected = False
 
+        return self
+
     def save(self, session=None, bypass_validation=False, comment=None):
         return self.manager.run_save(session, bypass_validation, comment)
+
+    def delete(self, session=None, comment=None):
+        return self.manager.run_delete(session, comment)
 
 
 class CollectionModel(BaseCollection):
     def __init__(self, **field_values):
-        super(CollectionModel, self).__init__(**field_values)
-        
+        super().__init__(**field_values)
+
         if not self.collection_name:
             raise CollectionException('Need to specify the collection_name')
-        
+
         if not self.db_alias:
             raise CollectionException('Need to the specify the db_alais')
-        
+
         for name, field in self._fields.items():
-            # Make fields accessible by the dot convension and obscure class attribute
+            # Make fields accessible by the dot conversion and obscure class attribute
             # names
             setattr(self, name, field)
-        
-        if self._initial:
-            self._incoming_data_to_fields()
-        
+
+        self._incoming_data_to_fields(self._initial, initial=True)
+
         self.schema_validators = None
 
     def to_document(self, json_parsed=False, exclude=tuple()):
@@ -210,14 +222,17 @@ class CollectionModel(BaseCollection):
                 continue  # Go to next one
             if isinstance(field, EmbeddedDocumentField):
                 _get_embedded_document(document, name, field)
+            elif isinstance(field, ObjectIdField):
+                if name not in document:
+                    document[name] = field.data
             elif isinstance(field, ReferenceIdField):
                 ref = field.reference
                 if ref is None:
-                    # TODO: This should raise an error since the object referenced by another must not be deleted before
-                    # TODO: the one referencing
-                    document[name] = ref
-                    continue
-                document[name] = ref.pk
+                    # This should raise an error since the object referenced by another must not be deleted before
+                    # the one referencing
+                    document[f'{name}_id'] = ref
+                else:
+                    document[f'{name}_id'] = ref.pk
             else:
                 document[name] = field.data
 
@@ -225,10 +240,10 @@ class CollectionModel(BaseCollection):
             return bson_dumps(document)
         return document
 
-    def set_model_data(self, data: dict):
-        self._initial = data
-        self._incoming_data_to_fields()
-    
+    def set_model_data(self, data: t.Dict, initial=False):
+        self._incoming_data_to_fields(data, initial)
+        return self
+
     @property
     def collection(self) -> t.Union[MongoCollection, None]:
         return self.__collection__

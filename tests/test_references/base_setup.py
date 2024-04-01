@@ -1,4 +1,5 @@
 import pytest
+
 from flask_mongodb.core.mongo import MongoDB
 from tests.fixtures import BaseAppSetup
 from tests.model_for_tests.reference.models import CarCompany, CarModel
