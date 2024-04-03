@@ -1,6 +1,7 @@
 import click
 import flask.cli
 from click import echo
+from werkzeug.utils import import_string
 
 from flask_mongodb.models.shitfs.shift import Shift
 from flask_mongodb.models.shitfs.history import create_db_shift_history
@@ -62,11 +63,32 @@ def examine(database, collection):
 @click.option('--collection', '-c', help='Specify model collection name')
 @flask.cli.with_appcontext
 def run(database, collection):
+    from flask import current_app
     from flask_mongodb import current_mongo
-    
-    models = current_mongo.collections[database]
-    
-    shift_history = models.pop('shift_history')()
+
+    models_path = current_app.config.get('MODELS', [])
+    if not models_path:
+        # TODO: Custom Exception
+        raise Exception('missing models')
+    models_list = []
+
+    for mod in models_path:
+        mod = mod + '.models'
+        models = import_string(mod)
+        models_list.append(models)
+
+    models = {}
+
+    for m in models_list:
+        module_contents = dir(m)
+        for cont in module_contents:
+            obj = getattr(m, cont)
+            if hasattr(obj, '_is_model'):
+                collection_name = obj.collection_name
+                if collection_name and obj.db_alias == database:
+                    models[collection_name] = obj
+
+    shift_history = current_mongo.collections[database]['shift_history']()
     
     if collection:
         models = {collection: models[collection]}
@@ -74,13 +96,13 @@ def run(database, collection):
     for m in models.values():
         shift = Shift(m)
         shift.shift()
-        shift_history.set_model_data(data={
+        shift_history.set_model_data({
             'db_collection': m.collection_name,
             'new_fields': shift.should_shift['new_fields'] or None,
             'removed_fields': shift.should_shift['removed_fields'] or None,
             'altered_fields': shift.should_shift['altered_fields'] or None
         })
-        shift_history.manager.insert_one(shift_history.data(include_reference=False))
+        shift_history.save()
     
     echo('Done shifting')
 

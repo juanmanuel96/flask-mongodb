@@ -4,10 +4,12 @@ import pytest
 from click.testing import CliRunner
 from flask import Flask
 
-from flask_mongodb import MongoDB
+from flask_mongodb import MongoDB, current_mongo
 from flask_mongodb.cli.cli import create_model
 from flask_mongodb.cli.db_shifts import db_shift
 from flask_mongodb.core.wrappers import MongoConnect
+from flask_mongodb.models.shitfs.shift import Shift
+from tests.model_for_tests.cli.shift.shift import ModelForTest as ShiftModel_T
 from tests.utils import DB_NAME, MAIN
 
 NAME = DB_NAME + '_cli'
@@ -60,42 +62,37 @@ def test_db_creation(app: Flask):
     assert res
 
 
-@pytest.mark.skip(reason='Examine without data will always yield a possible shift')
-def test_shift_history(app: Flask):
-    runner = CliRunner()
-    with app.app_context():
-        result = runner.invoke(db_shift, ['examine'])
-        res = result.exit_code == 0
-    assert res
-
-
-@pytest.mark.skip(reason='Shift is failing on models without any data')
 def test_shifting(app_for_shift: Flask):
+    """
+    This function will test the shifting process and examine at the same time since it is required to make a shift.
+    :param app_for_shift:
+    :return:
+    """
     runner = CliRunner()
 
     with app_for_shift.app_context():
         runner.invoke(db_shift, ['start-db'])
 
-        with open('model_for_tests/cli/shift/models.py', 'r') as model_file:
-            model_file_contents = model_file.read()  # Get the model file's contents
+        current_mongo.collections[ShiftModel_T.collection_name] = ShiftModel_T
+        shift_history = current_mongo.collections[ShiftModel_T.db_alias]['shift_history']()
 
-        with open('model_for_tests/cli/shift/shift.py', 'r') as shift_file:
-            shift_file_contents = shift_file.read()  # Get shift file's contents
+        # Have to call Shift class directly since in actual implementation requires modification of a file
+        # and during execution of test, file changes are not captured real time
+        s = Shift(ShiftModel_T)
+        s.shift()
 
-        with open('model_for_tests/cli/shift/models.py', 'w') as model_file:
-            model_file.write(shift_file_contents)  # Replace model file content with shift data
+        shift_history.set_model_data({
+            'db_collection': ShiftModel_T.collection_name,
+            'new_fields': s.should_shift['new_fields'] or None,
+            'removed_fields': s.should_shift['removed_fields'] or None,
+            'altered_fields': s.should_shift['altered_fields'] or None
+        })
+        shift_history.save()
 
-        try:
-            # Run shift command
-            result = runner.invoke(db_shift, ['run'])
-            res = result.exit_code == 0
-        except Exception:
-            res = False
+        # Get the saved history to compare
+        history = shift_history.manager.find_one(_id=shift_history.pk)
 
-        with open('model_for_tests/cli/shift/models.py', 'w') as model_file:
-            model_file.write(model_file_contents)  # Rever model file to original contents
-
-    assert res, 'Shift was not achieved'
+    assert history['db_collection'] == ShiftModel_T.collection_name, 'Shift was not achieved'
 
 
 def test_add_collection(app: Flask):
@@ -124,3 +121,31 @@ def test_create_model():
     os.remove(models_path)
 
     assert exists and content_valid
+
+
+def test_check_history(app: Flask):
+    runner = CliRunner()
+
+    with app.app_context():
+        runner.invoke(db_shift, ['start-db'])
+
+        ShiftHistory = current_mongo.collections[ShiftModel_T.db_alias]['shift_history']
+
+        for item in [
+            {'name': 'collection1', 'new_fields': [], 'removed_fields': ['f1'], 'altered_fields': []},
+            {'name': 'collection2', 'new_fields': ['f1'], 'removed_fields': [], 'altered_fields': ['f2']},
+            {'name': 'collection3', 'new_fields': ['f2'], 'removed_fields': ['f4'], 'altered_fields': []}
+        ]:
+            ShiftHistory(
+                db_collection=item['name'],
+                new_fields=item['new_fields'] or None,
+                removed_fields=item['removed_fields'] or None,
+                altered_fields=item['altered_fields'] or None
+            ).save()
+
+        result = runner.invoke(db_shift, ['history'])
+        res = ('collection3' in result.output
+               and 'collection2' in result.output
+               and ShiftHistory().manager.all().count() == 3
+               )
+    assert res

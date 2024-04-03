@@ -8,10 +8,5 @@ class ModelForTest(CollectionModel):
     collection_name: str = 'shift_collection'
 
     sample_text = fields.StringField(required=True)
-    # sample_embedded_doc = fields.EmbeddedDocumentField(
-    #     properties={
-    #         'field1': fields.BooleanField(),
-    #         'field2': fields.StringField()
-    #     }
-    # )
     sample_field = fields.DatetimeField(default=datetime.datetime.now)
+    field_to_remove = fields.StringField(allow_null=True, default=None)
