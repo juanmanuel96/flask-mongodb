@@ -59,7 +59,7 @@ class MongoDB:
                 alias_client = MongoConnect(uri)
                 alias_client.server_info()  # This is to test the connection
             except ServerSelectionTimeoutError:
-                raise DatabaseException('No valid database connection estbalished')
+                raise DatabaseException('No valid database connection established')
             
             db = MongoDatabase(alias_client, db_name)
             db.alias = db_alias

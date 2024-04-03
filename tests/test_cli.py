@@ -9,6 +9,7 @@ from flask_mongodb.cli.cli import create_model
 from flask_mongodb.cli.db_shifts import db_shift
 from flask_mongodb.core.wrappers import MongoConnect
 from flask_mongodb.models.shitfs.shift import Shift
+from tests.model_for_tests.cli.shift.models import ModelForTest
 from tests.model_for_tests.cli.shift.shift import ModelForTest as ShiftModel_T
 from tests.utils import DB_NAME, MAIN
 
@@ -54,7 +55,7 @@ def app_for_shift():
     client.close()
 
 
-def test_db_creation(app: Flask):
+def test_db_creation(app):
     runner = CliRunner()
     with app.app_context():
         result = runner.invoke(db_shift, ['start-db'])
@@ -62,7 +63,7 @@ def test_db_creation(app: Flask):
     assert res
 
 
-def test_shifting(app_for_shift: Flask):
+def test_shifting(app_for_shift):
     """
     This function will test the shifting process and examine at the same time since it is required to make a shift.
     :param app_for_shift:
@@ -93,6 +94,25 @@ def test_shifting(app_for_shift: Flask):
         history = shift_history.manager.find_one(_id=shift_history.pk)
 
     assert history['db_collection'] == ShiftModel_T.collection_name, 'Shift was not achieved'
+
+
+def test_no_shift_necessary(app_for_shift):
+    runner = CliRunner()
+    with app_for_shift.app_context():
+        runner.invoke(db_shift, ['start-db'])
+
+        shift_history = current_mongo.collections[ShiftModel_T.db_alias]['shift_history']()
+
+        # Have to call Shift class directly since in actual implementation requires modification of a file
+        # and during execution of test, file changes are not captured real time
+        s = Shift(ModelForTest)
+        shift_res = s.shift()
+
+        # Get the saved history to compare
+        history_count = shift_history.manager.all().count()
+        res = (not shift_res and history_count == 0)
+
+    assert res, 'Shift was not achieved'
 
 
 def test_add_collection(app: Flask):

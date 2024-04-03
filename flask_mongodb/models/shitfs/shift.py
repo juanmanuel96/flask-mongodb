@@ -1,4 +1,5 @@
 import typing as t
+from copy import copy
 
 from flask_mongodb.cli.utils import define_schema_validator
 from flask_mongodb.core.wrappers import MongoDatabase
@@ -92,7 +93,10 @@ class Shift:
                                 # This means it is no longer an EnumField
                                 self.should_shift['altered_fields'].append(_path)
                         else:
-                            field_bson = field.bson_type  # Get the field's bson_type attribute
+                            field_bson: t.List = copy(field.bson_type)  # Get the field's bson_type attribute
+                            if field.allow_null:
+                                field_bson.append('null')
+
                             if field_bson is None and bson_type is not None:
                                 # Field was altered to a EnumField type
                                 self.should_shift['altered_fields'].append(_path)
@@ -159,7 +163,7 @@ class Shift:
         if not examine:
             # If nothing has to be done, then exit
             # TODO: Make a better exit that provides better information
-            return True
+            return False
         
         db = self._get_database()
         collection = self._get_collection(db)
