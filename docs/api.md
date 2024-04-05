@@ -12,7 +12,7 @@ _meth_ <span class="class_attr">disconnect</span>(_using='main'_)
 
 Closes the connection of the desired database by alias.
 
-** Parameters **
+**Parameters**
 
 - `using`: Alias of the database to disconnect.
 
@@ -76,9 +76,13 @@ _meth_ <span class="class_attr">save</span>(_bypass_validation=False_)
 
 Save model data in the data base.
 
-** Parameters **
+**Parameters**
+
+- `session`: Pymongo session.
 
 - `bypass_validation`: Bypass document validation at the database level. While the option is available, it should be use as little as possible to avoid bad data in database.
+
+- `comment`: A comment for the insert or update command.
 
 _class_ <span class="py_class">flask_mongodb.CollectionModel</span>(_\*\*field_values_)
 
@@ -88,7 +92,7 @@ _meth_ <span class="class_attr">set_model_data</span>(_data_)
 
 Sets the model fields values with the provided data. The `data` parameter must be a dictionary where the keys must be strings.
 
-** Parameters **
+**Parameters**
 
 * `data`: Data to give each field, keys must be string with the name of the fields
 
@@ -102,7 +106,7 @@ _class_ <span class='py_class'>flask_mongodb.models.fields.Field</span>(_require
 
 Base class for all fields to inherit from.
 
-** Parameters **
+**Parameters**
 
 * `required`: Determine if the field is required, default `True`
 * `allow_null`: Determine if null values are allowed, default `False`
@@ -113,7 +117,7 @@ _meth_ <span class="class_attr">set_data</span>(_value_)
 
 This method sets the field's value. It must be overriden by child classes to properly assign the value with the correct type.
 
-** Parameters **
+**Parameters**
 
 * `value`: Value to set for the field
 
@@ -125,7 +129,7 @@ _meth_ <span class="class_attr">run_validation</span>(_value_)
 
 Method for running the field's `validate_data` method if it has not been validated.
 
-** Parameters **
+**Parameters**
 
 * `value`: Value to be validated
 
@@ -133,7 +137,7 @@ _meth_ <span class="class_attr">validate_data</span>(_value_)
 
 Method for validating the incomming data for the field. After it has been ran, it sets the `_validated` flag to True. When creating a custom field, this method's super must be executed after the validation logic.
 
-** Parameters **
+**Parameters**
 
 * `value`: Value to be validated
 
@@ -217,7 +221,7 @@ _class_ <span class='py_class'>flask_mongodb.models.document_set.DocumentSet</sp
 
 A list-like object that represents the results of a query. Lazily loads each document in model representation.
 
-** Parameters **
+**Parameters**
 
 * `model`: Model class for the document set, default `None`
 
@@ -233,7 +237,7 @@ _meth_ <span class="class_attr">limit</span>(_number_)
 
 Limit the number of documents from the query result.
 
-** Parameters **
+**Parameters**
 
 * `number`: Total documents to get from a larger set
 
@@ -241,7 +245,7 @@ _meth_ <span class="class_attr">sort</span>(_key_or_list, direction=None_)
 
 Sort the document in the ordered desired. Use the same sorting convention you would use for a pymongo Cursor.
 
-** Parameters **
+**Parameters**
 
 * `key_or_list`: Key or list of keys to apply the sorting over
 * `direction`: Direction to which make the sorting, default `None`. Use `pymongo.ASCENDING` or `pymongo.DESCENDING` for the `direction` parameter
@@ -254,7 +258,7 @@ Return the total number of documents from the query.
 
 Run a method from the cursor class in your document set. It cannot be a magic method (methods that begin with "_") nor any of the predefiend of the class, or the clone method.
 
-** Parameters **
+**Parameters**
 
 * `meth_name`: Name of the method of the cursor to run
 * `*args`: Args to pass to the pymongo Cursor method

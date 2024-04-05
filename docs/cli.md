@@ -20,11 +20,11 @@ This command will create a model file in the directory of your choosing. This co
 
 ### shift
 
-The shift CLI group is used to generate database shift. In Flask-MongoDB database shifting is the concept of altering the database either by creating it or modifying an existing one. The CLI tool was born to satisfy this need of the package. This command cannot run alone on its own it has a set of subcommands that make the use of shifting possible.
+The shift CLI group is used to generate database shift. In Flask-MongoDB, database shifting is the concept of altering a collection either by creating it or modifying an existing one. One or more collections can be shifted in a single run. The CLI tool was born to satisfy this requirement of the package. This command cannot run alone on its own it has a set of subcommands that make the use of shifting possible.
 
 #### start-db
 
-This command creates databases to be used by your application. It should be ran once the databases have been defined in the configurations of the application. Models do not have to be created before hand to create the database, it would be ideal but not necessary. The `start-db` command has an option for specifying a model to be created.
+This command creates databases to be used by your application. It should be executed once the databases have been defined in the configurations of the application. Models do not have to be created beforehand to create the database, it would be ideal but not necessary. The `start-db` command has an option for specifying a model to be created.
 
 Please note that with this package you can run your application without explicitly creating a database, but once you stop the application all data will be lost. This command must be run whenever a new model group has been created.
 
@@ -44,18 +44,9 @@ Options for this command:
 * --database, -d: Specify the database to add the collections, default is `main`
 * --help: Display help information
 
-#### history
-
-This command will go through the `shift_hisotry` collection of the database and print the datetime and collection name that was shifted.
-
-Options for this command:
-
-* --database, -d: Specify the database to see the shift history, default is `main`
-* --help: Display help information
-
 #### examine
 
-This command will compere a collection of the database current state, specifically the schema, with the collection model's schema. After the examination has been completed, the command will output detailing which collections of the current database will require shifting. The `examine` will look for new fields, field alterations (e.g. changing a StringField to an EnumField), and
+This command will compare a collection of the database current state, specifically the schema, with the model's schema. After the examination has been completed, the command will output detailing which collections of the current database will require shifting. The `examine` will look for new fields, field alterations (e.g. changing a StringField to an EnumField), and removed fields.
 
 Options for this command:
 
@@ -65,11 +56,19 @@ Options for this command:
 
 #### run
 
-The run command will execute the shifts necessary for the databases. Shifting does another examination before applying the shifts.
-
-> **NOTE:** When the schema of the collection and the model have not changed at all, the shifting tool will treat this as another necessary shift. If a collection does not have data, the shift tool will also assume a shift is necessary. Everytime a shift is run, a new entry in the database's shift history collection is inserted. Before running the `run` command, run the `examine` command first to see if a shift is necessary.
+The run command will execute the shifts necessary for the databases. Shifting does an examination before applying the shifts.
 
 Options for this command:
 
 * --database, -d: Specify the database on which to run the shift, default is main
 * --collection, -c: Specify the collection to run the shift
+
+#### history
+
+This command will go through the `shift_hisotry` collection of the database and print the datetime and collection name that was shifted.
+
+Options for this command:
+
+* --database, -d: Specify the database to see the shift history, default is `main`
+* --help: Display help information
+
