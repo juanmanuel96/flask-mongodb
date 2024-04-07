@@ -18,7 +18,7 @@ As explained in the previous section, the `MODELS` configuration searches for th
 
 ### The CollectionModel
 
-Inside a models module, you would need to create your model class which must inherit from the `CollectionModel` class of Flask-MongoDB.
+Inside a model's module, you would need to create your model class which must inherit from the `CollectionModel` class of Flask-MongoDB.
 ```python
 from flask_mongodb.models import CollectionModel
 
@@ -33,22 +33,22 @@ class BlogPost(CollectionModel):
     collection_name = 'blog_post'
 ```
 
-### Defining Fields
+### Defining model fields
 
-As mentioned above, the fields are what define the schema of a document in a collection (**Remember**: Collections in MongoDB are composed of documents where each document schema does not have to necessarily match as the next one). Before we create a field in out example model, they must be explained first.
+As mentioned above, the fields are what define the schema of a document in a collection. Before we create a field in our example model, they must be explained first.
 
 #### Structure of fields
 
-A field describes a key in a document. It has a BSON type, a required flag, allow null flag, a default value or callable, and a clean data function. The former is a class attribute while the rest are initialization parameters. The default value can be a constant value or a callable.
+A field describes a key in a document. It has a BSON type, a required flag, allow null flag, a default value or callable, an initial value or callable, and a clean data function. 
 
-Each field, has its unique characteristics. Some inherit from other field types, but do some special task or modification that justify its existence. For example, the `PasswordField` inherits from `StringField`. It modifies a bit the `set_data` method to hash the data that represents a password. 
+The fields have their unique characteristics. Some inherit from other field types, but do some special task or modification that justify its existence. For example, the `PasswordField` inherits from `StringField`. It modifies a bit the `set_data` method to hash the data that represents a password. 
 
 Other characteristics are:
 
 1. `required`: Makes the field require truthy value, default is `True`
 2. `allow_null`: Permits data to be `None`, default is `False`
 3. `default`: A default value the field will have; can be a callable.
-4. `initial`: An initial value for the field
+4. `initial`: An initial value for the field; can be a callable.
 5. `clean_data_func`: A callable that will clean the data before it is returned.
 
 For more field specifics, refer to the API Reference section.
@@ -70,7 +70,7 @@ This is all that is required to create a model.
 
 ### The save method
 
-The CollectionModel class has a save method that will take care of inserting and updating the collection document. When you instantiate a CollectionModel, the `_id` field data is set to None by default. Executing the `save` method will evaluate the `_id` field. If it has a value other than `None` it will attempt to update the document with the new data. If it is `None`, then it will run an insert action and update the instance's `_id` field with the new ObjectId value. The method will return the pymongo operation result.
+The CollectionModel class has a save method that will take care of inserting and updating the collection document. When you instantiate a CollectionModel, the `_id` field data is set to None by default. Executing the `save` method will evaluate the `_id` field. If it is `None`, then it will run an insert action and update the instance's `_id` field with the new ObjectId value. Otherwise, an `update_one` operation will be done. Note that the update type is a `$set`. The method will return the pymongo operation result.
 
 ### The delete method
 
