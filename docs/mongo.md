@@ -34,7 +34,7 @@ DATABASE = {
 }
 ```
 
-The `main` alias should always be present since by default all models are connected to main. However, it is up to you for setting the DB alias names. If `main` is not present, you must make sure that no model belongs to the `main` database. DB aliases on models will be covered later.
+The `main` alias should always be present since by default all models are connected to main. However, it is up to you for setting the DB alias names for other database connections.
 
 It is recommended that in your configurations add a `DATABASE` variable to overwrite the default configurations and connect to your database. Remember that once you start the application, if the database does not exist it is created automatically. In your `DATABASE` variable, the first key is the database alias. Its value should be another dictionary with the following keys:
 
@@ -106,4 +106,4 @@ In your app initialization file, you have to initialize your MongoDB instance af
 
 ## Using models at runtime
 
-While developing your application, you will want to use the models. You can import any of your models as you would import any other class in Python. To use the model, simply initialize it and you can do model operations with it. 
+While developing your application, you will want to use the models. You can import any of your models as you would import any other class in Python. To use the model, simply initialize it, and you can do model operations with it. Remember that whenever making queries or doing database operation, make them inside the application context.

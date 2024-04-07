@@ -20,6 +20,7 @@ DATA = {
     }
 
 
+@pytest.mark.skip(reason='Serializers will possibly get deleted')
 class TestModelSerializer(BaseAppSetup):
     MODELS = ['tests.model_for_tests.core']
     

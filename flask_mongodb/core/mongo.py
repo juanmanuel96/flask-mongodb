@@ -1,16 +1,15 @@
-import typing as t
 import logging
+import typing as t
 
 from flask import Flask
 from pymongo.errors import ServerSelectionTimeoutError
 from werkzeug.utils import import_string
 
 from flask_mongodb.about import VERSION
-from flask_mongodb.core.exceptions import (CollectionInvalid, CouldNotRegisterCollection, 
-                                           DatabaseAliasException, DatabaseException, ImproperConfiguration, InvalidClass)
+from flask_mongodb.core.exceptions import (DatabaseAliasException, DatabaseException, ImproperConfiguration)
 from flask_mongodb.core.wrappers import MongoConnect, MongoDatabase
 from flask_mongodb.models import CollectionModel
-from flask_mongodb.models.shitfs.hisotry import create_db_shift_hisotry
+from flask_mongodb.models.shitfs.history import create_db_shift_history
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -60,7 +59,7 @@ class MongoDB:
                 alias_client = MongoConnect(uri)
                 alias_client.server_info()  # This is to test the connection
             except ServerSelectionTimeoutError:
-                raise DatabaseException('No valid database connection estbalished')
+                raise DatabaseException('No valid database connection established')
             
             db = MongoDatabase(alias_client, db_name)
             db.alias = db_alias
@@ -70,7 +69,7 @@ class MongoDB:
         
         app.mongo = self
     
-    def __getitem__(self, arg) -> t.Union[t.Type[MongoDatabase], None]:
+    def __getitem__(self, arg) -> t.Union[MongoDatabase, None]:
         db = self.__connections.get(arg)
         if db is None:
             raise DatabaseAliasException('Invalid database name')
@@ -99,34 +98,6 @@ class MongoDB:
             models_list.append(models)
         return models_list
     
-    def _automatic_model_registration(self, app: Flask):
-        """
-        DEPRECATED: This method will be removed as of version 2
-        """
-        if not app.config['MODELS']:
-            return None
-        models_list = []
-        
-        # Prepare a list of modules with their models
-        for mod in app.config['MODELS']:
-            mod = mod + '.models'
-            models = import_string(mod)
-            models_list.append(models)
-        
-        # Itereate over the list and register the models
-        for m in models_list:
-            module_contents = dir(m)  # Get contents of the module
-            for cont in module_contents:
-                obj = getattr(m, cont)  # Get each object
-                
-                # Register the obj as a collection if it has the collection_name
-                # and db_alias attributes which all models should have
-                if hasattr(obj, 'collection_name') and hasattr(obj, 'db_alias'):
-                    if obj.collection_name is None:
-                        # When the collection name is None, it is the base model class
-                        continue
-                    self.__register_collection(obj)
-    
     def _set_collections(self, app: Flask):
         models = self._get_model_list(app)
         for m in models:
@@ -149,29 +120,7 @@ class MongoDB:
         
         # Now add the history model
         for db in self.connections.keys():
-            self.__collections[db].update(shift_history=create_db_shift_hisotry(db))
-    
-    def __register_collection(self, collection_cls: t.Type[CollectionModel]):
-        """
-        DEPRECATED: This method will be removed as of version 2
-        """
-        _name = collection_cls.collection_name
-        success = self._insert_collection(_name, collection_cls)
-        if not success:
-            raise CouldNotRegisterCollection('Not success')
-        return success
-    
-    def _insert_collection(self, name, collection_cls: t.Type[CollectionModel]) -> bool:
-        """
-        DEPRECATED: This method will be removed as of version 2
-        
-        Inserts a new collection into the collections attribute.
-        """
-        _collection = collection_cls()
-        if _collection.db_alias not in self.__collections:
-            self.__collections[_collection.db_alias] = {}
-        self.__collections[_collection.db_alias].update({name: _collection})
-        return True
+            self.__collections[db].update(shift_history=create_db_shift_history(db))
 
     @property
     def collections(self):
@@ -180,46 +129,6 @@ class MongoDB:
     @property
     def connections(self):
         return self.__connections
-    
-    def register_models(self):
-        logger.warning("DEPRECATED: register_models method is deprecated and will be " \
-            "removed in version 2")
-        from flask import current_app
-        self._automatic_model_registration(current_app)
-
-    def register_collection(self, collection_cls: t.Type[CollectionModel]):
-        """
-        DEPRECATED: This method will be removed as of version 2
-        
-        Collection is a user-defined collection that will be added to the MongoFlask instance
-        """
-        logger.warning('DEPRECATED: register_collection model is a deprecated method that will be '\
-            'removed in version 2')
-        
-        if issubclass(collection_cls, CollectionModel):
-            return self.__register_collection(collection_cls)
-        else:
-            raise InvalidClass('Invalid class type')
-    
-    def get_collection(self, collection: t.Type[CollectionModel], default=None):
-        """
-        DEPRECATED: This method will be removed as of version 2
-        Retrieves a Collection instance from the collections attribute.
-
-        :param collection_name: Name of the collection to be retrieved
-        :type collection_name: str
-        """
-        logger.warning('register_collection model is a deprecated method that will be '\
-            'removed in version 2')
-        
-        collection_name = collection.collection_name
-        if not isinstance(collection_name, str):
-            raise CollectionInvalid('Must pass a collection or collection name')
-        try:
-            collection_to_return = self.collections[collection.db_alias][collection_name]
-            return collection_to_return
-        except KeyError:
-            return default
     
     # TODO: Disabled
     # def session(self, causal_consistency=None, default_transaction_options=None, 

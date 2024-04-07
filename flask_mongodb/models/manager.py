@@ -1,17 +1,24 @@
 import typing as t
+
 from bson import ObjectId
+from pymongo.client_session import ClientSession
 from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 
 from flask_mongodb.core.exceptions import OperationNotAllowed
-from flask_mongodb.core.mixins import InimitableObject
 from flask_mongodb.models.document_set import DocumentSet
 
 
-class BaseManager(InimitableObject):
+class BaseManager:
     def __init__(self, model=None):
-        self._model = model
+        from flask_mongodb.models import CollectionModel
+        self._model: CollectionModel = model
     
     def _clean_query(self, **q):
+        """
+        This is for searching
+        :param q: Keyword argument for key value items to include in query filter
+        :return: Dictionary for MongoDB to query for.
+        """
         _filter = {}
         for key, value in q.items():
             if hasattr(value, '_is_model'):
@@ -27,10 +34,7 @@ class BaseManager(InimitableObject):
         attr = super().__getattribute__(__name)
         if hasattr(attr, '_is_model'):
             attr.connect()
-        return attr 
-    
-    def __getattr__(self, __name):
-        return super().__getattr__(__name) 
+        return attr
     
     # Read operations
     def find(self, **filter):
@@ -50,24 +54,52 @@ class BaseManager(InimitableObject):
         return model
     
     # Create, Update, Delete (CUD) operations
-    def insert_one(self, insert_data: t.Union[None, t.Dict] = None, **options) -> InsertOneResult:
-        from flask_mongodb import CollectionModel
-        self._model: CollectionModel
+    def run_save(self, session: t.Optional[ClientSession] = None, bypass_validation=False,
+                 comment: t.Optional[str] = None) -> t.Union[InsertOneResult, UpdateResult]:
+        model_pk = self._model.pk
+        if model_pk is None:
+            # It is a new item
+            insert_data = self._model.to_document(exclude=('_id',))
+            ack = self._model.collection.insert_one(insert_data,
+                                                    session=session,
+                                                    bypass_document_validation=bypass_validation,
+                                                    comment=comment)
+            self._model['_id'] = ack.inserted_id
+        else:
+            # Must do an update
+            modified_fields = self._model.modified_fields()
+            ack = self._model.collection.update_one(
+                {'_id': self._model.pk},
+                {
+                    '$set': modified_fields
+                },
+                session=session, bypass_document_validation=bypass_validation, comment=comment
+            )
 
-        if insert_data:
-            insert_data.pop('_id', None)
-            for key, value in insert_data.items():
-                field = getattr(self._model, key, None)
-                if field is None or not hasattr(field, '_model_field'):
-                    continue
-                field.data = value
-            
-        insert = self._model.data(exclude=('_id',), include_reference=False)
-        ack = self._model.collection.insert_one(insert, **options)
-        self._model.pk = ack.inserted_id
         return ack
+
+    def run_delete(self, session: t.Optional[ClientSession] = None, comment: t.Optional[str] = None, **options):
+        ack = self._model.collection.delete_one({'_id': self._model.pk}, session=session, comment=comment,
+                                                **options)
+        return ack
+
+    def insert_one(self, **insert_data):
+        if not insert_data:
+            raise ValueError('Must provide data to insert')
+
+        insert_data.pop('_id', None)
+        for key, value in insert_data.items():
+            field = getattr(self._model, key, None)
+            if field is None or not hasattr(field, '_model_field'):
+                continue
+            field.set_data(value)
+
+        insert = self._model.to_document(exclude=('_id',))
+        ack = self._model.collection.insert_one(insert)
+        self._model['_id'] = ack.inserted_id
+        return self._model
     
-    def update_one(self, query, update, update_type='$set', **options) -> UpdateResult:
+    def update_one(self, query, update, update_type='$set', **options):
         assert isinstance(query, dict)
         assert isinstance(update, dict)
         
@@ -75,11 +107,15 @@ class BaseManager(InimitableObject):
         update = self._clean_query(**update)
         update = {update_type: update}
         ack = self._model.collection.update_one(query, update, **options)
-        return ack
+        if not ack.acknowledged:
+            # TODO: Custom Exception
+            raise Exception('Insert not acknowledged')
+        return self.find_one(**query)
     
     def delete_one(self, query, **options) -> DeleteResult:
         """Remove one and only one document"""
         assert isinstance(query, dict)
+
         q = self._clean_query(**query)
         ack = self._model.collection.delete_one(q, **options)
         return ack
@@ -87,16 +123,10 @@ class BaseManager(InimitableObject):
     def delete_many(self, query, **options) -> DeleteResult:
         """Delete all records that match the query"""
         assert isinstance(query, dict)
+
         q = self._clean_query(**query)
         ack = self._model.collection.delete_many(q, **options)
         return ack
-    
-    # Aliases
-    get = find_one
-    create = insert_one
-    update = update_one
-    delete = delete_one
-    delete_all = delete_many
 
 
 class CollectionManager(BaseManager):

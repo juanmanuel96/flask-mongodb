@@ -1,4 +1,5 @@
 import pytest
+
 from flask_mongodb.core.mongo import MongoDB
 from tests.fixtures import BaseAppSetup
 from tests.model_for_tests.reference.models import CarCompany, CarModel
@@ -7,19 +8,11 @@ from tests.model_for_tests.reference.models import CarCompany, CarModel
 class TestReferencesSetUp(BaseAppSetup):
     @pytest.fixture(scope='class', autouse=True)
     def setup_db(self, mongo: MongoDB):
-        model = CarCompany()
-        model['company_name'] = 'GM'
-        model['company_tax_id'] = '123'
-        model['employees'] = 1500
-        ack = model.manager.insert_one(model.data(include_reference=False))
+        model = CarCompany(company_name='GM', company_tax_id='123', employees=1500)
+        model.save()
         
-        model = CarModel()
-        model['company'] = ack.inserted_id
-        model['make'] = 'Chevrolet'
-        model['car_model'] = 'Camaro'
-        model['color'] = 'Black'
-        model['year'] = 2019
-        model.manager.insert_one(model.data(include_reference=False))
+        car_model = CarModel(company_id=model.pk, make='Chevrolet', car_model='Camaro', color='Black', year=2019)
+        car_model.save()
     
     @pytest.fixture(scope='class')
     def gm_company(self, mongo: MongoDB) -> CarCompany:

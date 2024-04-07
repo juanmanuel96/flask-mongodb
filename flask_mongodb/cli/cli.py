@@ -4,8 +4,7 @@ import click
 from click import echo
 
 from flask_mongodb.core.mongo import MongoDB
-from .db_shifts import db_shift
-# from .utils import echo
+from flask_mongodb.cli.db_shifts import db_shift
 
 
 @click.group('flask-mongodb', help=f"The FlaskMongoDB CLI tool")
@@ -49,7 +48,9 @@ def create_model(path, package):
         with open(os.path.join(path, '__init__.py'), 'w'):
             pass
         with open(os.path.join(path, 'models.py'), 'w') as models_file:
-            models_file.write("from flask_mongodb import CollectionModel \n\n"\
+            models_file.write("from flask_mongodb import CollectionModel\n"
+                              "from flask_mongodb.models import fields\n"
+                              "\n"
                               "# Create you model here\n")
     else:
         with open(os.path.join(path, 'models.py'), 'w') as models_file:

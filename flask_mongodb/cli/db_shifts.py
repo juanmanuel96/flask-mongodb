@@ -2,8 +2,9 @@ import click
 import flask.cli
 from click import echo
 
-from flask_mongodb.models.shitfs import Shift, create_db_shift_hisotry
-from .utils import add_new_collection, create_collection, start_database
+from flask_mongodb.cli.utils import add_new_collection, create_collection, start_database, get_models_from_app
+from flask_mongodb.models.shitfs.history import create_db_shift_history
+from flask_mongodb.models.shitfs.shift import Shift
 
 
 @click.group('shift', help='Shift the database to make changes')
@@ -19,8 +20,8 @@ def show_shifts(database):
     ShiftHistory = current_mongo.collections[database]['shift_history']
     history = ShiftHistory()
     data = history.manager.all()
-    
-    if data.count() < 1:
+
+    if data.count() == 0:
         echo('No history yet, execute the run command to make a history')
     else:
         for d in data:
@@ -32,21 +33,22 @@ def show_shifts(database):
 @click.option('--collection', '-c', help='Specify model collection name')
 @flask.cli.with_appcontext
 def examine(database, collection):
-    from flask_mongodb import current_mongo
-    
-    models = current_mongo.collections[database]
-    models.pop('shift_history', None)
+    from flask import current_app
+
+    # Get models from app and store in models_list
+    models = get_models_from_app(current_app)
     examination = {}
-    
-    if collection:
-        model = models[collection]
-        shift = Shift(model)
+
+    if collection and collection in models:
+        # This will examine one collection
+        model_class = models[collection]
+        shift = Shift(model_class)
         examination[collection] = shift.examine()
     else:
-        for name, model in models.items():
-            shift = Shift(model)
+        for name, model_class in models.items():
+            shift = Shift(model_class)
             examination[name] = shift.examine()
-    
+
     if any(list(examination.values())):
         echo(f'The following collections in {database} need shifting: ')
         for name, val in examination.items():
@@ -61,26 +63,25 @@ def examine(database, collection):
 @click.option('--collection', '-c', help='Specify model collection name')
 @flask.cli.with_appcontext
 def run(database, collection):
+    from flask import current_app
     from flask_mongodb import current_mongo
-    
-    models = current_mongo.collections[database]
-    
-    shift_history = models.pop('shift_history')()
-    
+
+    models = get_models_from_app(current_app)
+    ShiftHisotry = current_mongo.collections[database]['shift_history']()
+
     if collection:
         models = {collection: models[collection]}
-    
+
     for m in models.values():
         shift = Shift(m)
         shift.shift()
-        shift_history.set_model_data(data={
-            'db_collection': m.collection_name,
-            'new_fields': shift.should_shift['new_fields'] or None,
-            'removed_fields': shift.should_shift['removed_fields'] or None,
-            'altered_fields': shift.should_shift['altered_fields'] or None
-        })
-        shift_history.manager.insert_one(shift_history.data(include_reference=False))
-    
+        ShiftHisotry.manager.insert_one(
+            db_collection=m.collection_name,
+            new_fields=shift.should_shift['new_fields'] or None,
+            removed_fields=shift.should_shift['removed_fields'] or None,
+            altered_fields=shift.should_shift['altered_fields'] or None
+        )
+
     echo('Done shifting')
 
 
@@ -93,28 +94,27 @@ def run(database, collection):
 def start(all, database: str, path: str):
     from flask import current_app
     from flask_mongodb import current_mongo
-    
+
     if all:
-        database, path = None, None
         start_database(current_mongo, current_app)
-        
+
         for db_name in current_mongo.connections.keys():
-            HistoryModel = create_db_shift_hisotry(db_name)
+            HistoryModel = create_db_shift_history(db_name)
             create_collection(current_mongo, HistoryModel)
     else:
         # Check database is in the configurations
         if database not in current_app.config['DATABASE'].keys():
-            echo('Database not in cofigurations, added it first before running this command')
+            echo('Database not in config, add it first before running this command')
             return  # exit
-        
+
         if path and path not in current_app.config['MODELS']:
             current_app.config['MODELS'].clear()
             current_app.config['MODELS'].append(path)
-            
+
         start_database(current_mongo, current_app, database)
-        HistoryModel = create_db_shift_hisotry(database)
+        HistoryModel = create_db_shift_history(database)
         create_collection(current_mongo, HistoryModel)
-    
+
     click.echo('Database creation complete')
 
 
@@ -124,15 +124,18 @@ def start(all, database: str, path: str):
 def add_collections(database):
     from flask import current_app
     from flask_mongodb import current_mongo
-    
+
     try:
         db = current_mongo.connections[database]
     except KeyError:
-        click.echo('')
-    
+        click.echo('Database does not exist')
+        return
+
     if not db.client.list_database_names():
         click.echo('Run the start-db command first')
         return
-    
-    add_new_collection(current_mongo, current_app, database)
+
+    done = add_new_collection(current_mongo, current_app, database)
     click.echo('Addition of collection complete')
+
+    return done

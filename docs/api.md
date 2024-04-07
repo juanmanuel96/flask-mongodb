@@ -8,37 +8,11 @@ _class_ <span class='py_class'>flask_mongodb.MongoDB</span>(_app=None_)
 
 The MongoDB object connects your Flask instance to a MongoDB server. To configure the application, you may pass the Flask app during the instantiation of the MongoDB object or using the `init_app` method.
 
-_meth_ <span class="class_attr">init_app</span>(_app_)
-
-Configures the Flask instance with the MongoDB instance. This is the prefered method of configuration, especially when using the app factory method.
-
-_meth_ <span class="class_attr">register_collection</span>(_collection_cls_)
-
-**DEPRECATED**
-
-Registers a collection model to the MongoDB instance. 
-
-** Parameters **
-
-- `collection_cls`: Class of the model desired to be registered
-
-_meth_ <span class="class_attr">get_collection</span>(_collection_, _default=None_)
-
-**DEPRECATED**
-
-Retrieves registered collection model If the model is not registered, will return `None`. 
-
-** Parameters **
-
-- `collection`: Class of the model instance desired to be retrieved
-- `default`: The default value to be returned if the collection is not registered
-
-
 _meth_ <span class="class_attr">disconnect</span>(_using='main'_)
 
 Closes the connection of the desired database by alias.
 
-** Parameters **
+**Parameters**
 
 - `using`: Alias of the database to disconnect.
 
@@ -76,20 +50,6 @@ _attr_ <span class="class_attr">manager_class</span>=<span class="class_attr">Co
 
 Manager class for the collection.
 
-_meth_ <span class="class_attr">get_collection_schema</span>()
-
-Get the collection schema in JSON format.
-
-_meth_ <span class="class_attr">connect</span>()
-
-Create a connection between your model and the collection. 
-
-> **NOTE:** This requires your application to be at the top of the context stack.
-
-_meth_ <span class="class_attr">disconnect</span>()
-
-Disconnect your model from the collection.
-
 _property_ <span class="class_attr">manager</span>
 
 Property for the manager instance. 
@@ -102,28 +62,37 @@ _property_ <span class="class_attr">pk</span>
 
 Property for the _id field of the model, the primary key.
 
+_meth_ <span class="class_attr">connect</span>()
+
+Create a connection between your model and the collection. 
+
+> **NOTE:** This requires your application to be at the top of the context stack.
+
+_meth_ <span class="class_attr">disconnect</span>()
+
+Disconnect your model from the collection.
+
+_meth_ <span class="class_attr">save</span>(_bypass_validation=False_)
+
+Save model data in the data base.
+
+**Parameters**
+
+- `session`: Pymongo session.
+
+- `bypass_validation`: Bypass document validation at the database level. While the option is available, it should be use as little as possible to avoid bad data in database.
+
+- `comment`: A comment for the insert or update command.
+
 _class_ <span class="py_class">flask_mongodb.CollectionModel</span>(_\*\*field_values_)
 
-Inherits from BaseCollection. Base class for all your models to inherit from. Use keyword arguments to give initial values to your deseried fields.
-
-_meth_ <span class="class_attr">data</span>(_as_str=False, exclude=(), include_reference=True, include_all_references=False_)
-
-**Deprecated**
-
-Returns a dict-like representation of the model fields and its values.
-
-** Properties **
-
-* `as_str`: Return the model data as a string, default `False`
-* `exclude`: Exclude fields from the returned dictionary
-* `include_reference`: Include first level of referenced model's data, default `True`
-* `include_all_references`: Include all levels of refrences (data from models that have references), default `False`
+Inherits from BaseCollection. Base class for all your models to inherit from. Use keyword arguments to give initial values to your desired fields.
 
 _meth_ <span class="class_attr">set_model_data</span>(_data_)
 
 Sets the model fields values with the provided data. The `data` parameter must be a dictionary where the keys must be strings.
 
-** Parameters **
+**Parameters**
 
 * `data`: Data to give each field, keys must be string with the name of the fields
 
@@ -137,7 +106,7 @@ _class_ <span class='py_class'>flask_mongodb.models.fields.Field</span>(_require
 
 Base class for all fields to inherit from.
 
-** Parameters **
+**Parameters**
 
 * `required`: Determine if the field is required, default `True`
 * `allow_null`: Determine if null values are allowed, default `False`
@@ -148,7 +117,7 @@ _meth_ <span class="class_attr">set_data</span>(_value_)
 
 This method sets the field's value. It must be overriden by child classes to properly assign the value with the correct type.
 
-** Parameters **
+**Parameters**
 
 * `value`: Value to set for the field
 
@@ -160,7 +129,7 @@ _meth_ <span class="class_attr">run_validation</span>(_value_)
 
 Method for running the field's `validate_data` method if it has not been validated.
 
-** Parameters **
+**Parameters**
 
 * `value`: Value to be validated
 
@@ -168,7 +137,7 @@ _meth_ <span class="class_attr">validate_data</span>(_value_)
 
 Method for validating the incomming data for the field. After it has been ran, it sets the `_validated` flag to True. When creating a custom field, this method's super must be executed after the validation logic.
 
-** Parameters **
+**Parameters**
 
 * `value`: Value to be validated
 
@@ -252,7 +221,7 @@ _class_ <span class='py_class'>flask_mongodb.models.document_set.DocumentSet</sp
 
 A list-like object that represents the results of a query. Lazily loads each document in model representation.
 
-** Parameters **
+**Parameters**
 
 * `model`: Model class for the document set, default `None`
 
@@ -268,7 +237,7 @@ _meth_ <span class="class_attr">limit</span>(_number_)
 
 Limit the number of documents from the query result.
 
-** Parameters **
+**Parameters**
 
 * `number`: Total documents to get from a larger set
 
@@ -276,7 +245,7 @@ _meth_ <span class="class_attr">sort</span>(_key_or_list, direction=None_)
 
 Sort the document in the ordered desired. Use the same sorting convention you would use for a pymongo Cursor.
 
-** Parameters **
+**Parameters**
 
 * `key_or_list`: Key or list of keys to apply the sorting over
 * `direction`: Direction to which make the sorting, default `None`. Use `pymongo.ASCENDING` or `pymongo.DESCENDING` for the `direction` parameter
@@ -289,7 +258,7 @@ Return the total number of documents from the query.
 
 Run a method from the cursor class in your document set. It cannot be a magic method (methods that begin with "_") nor any of the predefiend of the class, or the clone method.
 
-** Parameters **
+**Parameters**
 
 * `meth_name`: Name of the method of the cursor to run
 * `*args`: Args to pass to the pymongo Cursor method
