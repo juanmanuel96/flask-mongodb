@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="A Flask extension for connecting to a MongoDB instance" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>Flask-MongoDB</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="stylesheet/extra.css" rel="stylesheet" />
+        <link href="css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Home";
+        var mkdocs_page_input_path = "index.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> Flask-MongoDB
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href=".">Home</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick Start</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#connecting-your-database-to-flask">Connecting your database to Flask</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#starting-the-database">Starting the database</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="mongo/">The MongoDB Class</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Database Operations</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="collections/">Models</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Data Validation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="serializers/">Serializing Data</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">CLI Tool</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="cli/">flask-mongodb</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="api/">API Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Changelog</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="changelog/">Changelog</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">Flask-MongoDB</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Home</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/juanmanuel96/flask-mongodb/edit/master/docs/index.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="overview">Overview</h1>
+<p>Flask-MongoDB is a Flask extension for connecting one or more MongoDB databases to a Flask instance. This extension also includes collection model classes, model view, serializers, and model serializers.</p>
+<h2 id="installation">Installation</h2>
+<p>Currently, the package is not in pip. However, you can install the package with pip by pulling from GitHub with the following command: </p>
+<pre><code>pip install git+https://github.com/juanmanuel96/flask-mongodb
+</code></pre>
+<p>This will install the latest stable version of the package.</p>
+<h2 id="quick-start">Quick Start</h2>
+<p>This quick start guide will help you set up a Flask application with Flask-MongoDB.</p>
+<h3 id="configuration">Configuration</h3>
+<p>The first step is to set the Flask configurations. Flask-MongoDB only has two configurations: <code>DATABASE</code> and <code>MODELS</code>. The former tells the MongoDB instance to which databases to connect to, while the latter tells the instance where the models are located. </p>
+<p>The <code>DATABASE</code> configuration must be a dictionary of dictionaries where the first level key is the database alias for the application and the value dictionary must have the host, port, database name, and username and password if it applies. You can connect as many databases as you want. They can even come from different hosts. Flask-MongoDB has default values for both configurations:</p>
+<pre><code class="language-python"># Database configuration
+DATABASE = {
+    'main': {
+        'HOST': 'localhost',
+        'PORT': 27017,
+        'NAME': 'main'
+    }
+}
+
+# Models configuration
+MODELS = []
+</code></pre>
+<p>The <code>DATABASE</code> and <code>MODELS</code> configuration will be covered in more detail later in the documentation</p>
+<h3 id="connecting-your-database-to-flask">Connecting your database to Flask</h3>
+<p>Connecting you database to your Flask instance is the same as in any other Flask extension. First create your Flask instance. </p>
+<pre><code class="language-python">from flask import Flask
+
+app = Flask(__name__)
+</code></pre>
+<p>Import the <code>MongoDB</code> class and instanciate it.</p>
+<pre><code class="language-python">from flask import Flask
+from flask_mongodb import MongoDB
+
+app = Flask(__name__)
+mongo = MongoDB()
+</code></pre>
+<p>To connect your MongoDB instance to the Flask instance, you have two options:</p>
+<ol>
+<li>Pass the Flask instance as parameter of the <code>MongoDB</code> instantiation </li>
+<li>Use the factory method and call the <code>init_app</code> method from <code>MongoDB</code> passing a Flask instance as parameter.</li>
+</ol>
+<h3 id="starting-the-database">Starting the database</h3>
+<p>Before actually running the application, you must create the database (or databases) and their collections. Run the following command to create the databases of your application.</p>
+<pre><code>flask-mongodb shift start-db --all
+</code></pre>
+<p>This is part of the CLI tool of the package, which will be covered later in the documentation.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="mongo/" class="btn btn-neutral float-right" title="The MongoDB Class">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/juanmanuel96/flask-mongodb" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+    
+      <span><a href="mongo/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+      <script src="js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 1.5.3
+Build Date UTC : 2024-04-07 02:30:23.114620+00:00
+-->
