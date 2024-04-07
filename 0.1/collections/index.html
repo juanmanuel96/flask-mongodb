@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Models - Flask-MongoDB</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../stylesheet/extra.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Models";
+        var mkdocs_page_input_path = "collections.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Flask-MongoDB
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../mongo/">The MongoDB Class</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Database Operations</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">Models</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#the-collection-metadata">The collection metadata</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#a-collections-fields-or-schema">A collection's fields or schema</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#creating-a-model">Creating a model</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#the-collectionmodel">The CollectionModel</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#defining-model-fields">Defining model fields</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#structure-of-fields">Structure of fields</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#adding-a-field-to-the-model">Adding a field to the model</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#the-save-method">The save method</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#the-delete-method">The delete method</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#making-queries">Making queries</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#collection-manager">Collection Manager</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#read-queries">Read queries</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#write-queries">Write Queries</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#referencemanager">ReferenceManager</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#document-sets">Document Sets</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#documentset-methods">DocumentSet methods</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Data Validation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../serializers/">Serializing Data</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">CLI Tool</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">flask-mongodb</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/">API Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Changelog</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../changelog/">Changelog</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Flask-MongoDB</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Database Operations</li>
+      <li class="breadcrumb-item active">Models</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/juanmanuel96/flask-mongodb/edit/master/docs/collections.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="what-are-models">What are models?</h1>
+<p>Flask-MongoDB has a modelling class for your collections. The idea behind the models is somewhat the same as for the Django framework. The difference stands in the complexity behind the creation of these models compared to the ones of Django. Flask-MongoDB has a philosophy of making it easier for the developer to have their MongoDB collections well-structured while still offering of having the data not so structured. </p>
+<p>A <code>CollectionModel</code> from Flask-MongoDB represents a collection of a particular database. It is composed of metadata, fields, and the manager. </p>
+<h2 id="the-collection-metadata">The collection metadata</h2>
+<p>Its metadata are three class attributes: <code>collection_name</code>, <code>db_alias</code>, and <code>schemaless</code>. The first one must be specified in all models while the last two have default values <code>main</code> and <code>False</code>. By default, a collection belongs to the main database and applies schema validation at the DB level. The <code>schemaless</code> attribute is used to enable or disable schema validation, it does not remove the requirement of fields. Schema validation can be completely turned off from collection to collection, if the developer chooses so. </p>
+<h2 id="a-collections-fields-or-schema">A collection's fields or schema</h2>
+<p>A model's fields are what define the schema of the collection. The schema of the collection are basically the keys most or all documents in the collection have. Fields by default will require some form of data. If the required flag is removed, it could be saved with a <code>None</code> value or some other default value. Future versions will include better methods for creating models where some can have very strict schemas while others have no schema at all, meaning the use of fields or dynamic assignments of fields. Currently, a model must have at least one field defined. </p>
+<h2 id="creating-a-model">Creating a model</h2>
+<p>As explained in the previous section, the <code>MODELS</code> configuration searches for the models module inside the package path in the list. This configuration is a list of packages or locations where a <code>models.py</code> file or <code>models</code> package exists.</p>
+<h3 id="the-collectionmodel">The CollectionModel</h3>
+<p>Inside a model's module, you would need to create your model class which must inherit from the <code>CollectionModel</code> class of Flask-MongoDB.</p>
+<pre><code class="language-python">from flask_mongodb.models import CollectionModel
+
+class BlogPost(CollectionModel):
+    pass
+</code></pre>
+<p>In this example, the <code>BlogPost</code> model class is set to the DB of alias <code>main</code> and has schema validation enabled. However, this will not work since the <code>collection_name</code> attribute must be defined and at least one field is required. So, define the collection name. We will later define a field.</p>
+<pre><code class="language-python">from flask_mongodb.models import CollectionModel
+
+class BlogPost(CollectionModel):
+    collection_name = 'blog_post'
+</code></pre>
+<h3 id="defining-model-fields">Defining model fields</h3>
+<p>As mentioned above, the fields are what define the schema of a document in a collection. Before we create a field in our example model, they must be explained first.</p>
+<h4 id="structure-of-fields">Structure of fields</h4>
+<p>A field describes a key in a document. It has a BSON type, a required flag, allow null flag, a default value or callable, an initial value or callable, and a clean data function. </p>
+<p>The fields have their unique characteristics. Some inherit from other field types, but do some special task or modification that justify its existence. For example, the <code>PasswordField</code> inherits from <code>StringField</code>. It modifies a bit the <code>set_data</code> method to hash the data that represents a password. </p>
+<p>Other characteristics are:</p>
+<ol>
+<li><code>required</code>: Makes the field require truthy value, default is <code>True</code></li>
+<li><code>allow_null</code>: Permits data to be <code>None</code>, default is <code>False</code></li>
+<li><code>default</code>: A default value the field will have; can be a callable.</li>
+<li><code>initial</code>: An initial value for the field; can be a callable.</li>
+<li><code>clean_data_func</code>: A callable that will clean the data before it is returned.</li>
+</ol>
+<p>For more field specifics, refer to the API Reference section.</p>
+<h4 id="adding-a-field-to-the-model">Adding a field to the model</h4>
+<p>Now that fields have been explained, let's add a field to our model. Remember that at least one field is required for each model. To add a field, import the <code>fields</code> module from the <code>models</code> module.</p>
+<pre><code class="language-python">from flask_mongodb.models import CollectionModel, fields
+
+class BlogPost(CollectionModel):
+    collection_name = 'blog_post'
+
+    title = fields.StringField(max_length=100)
+    body = fields.StringField(min_length=25, max_length=1000)
+</code></pre>
+<p>This is all that is required to create a model.</p>
+<h3 id="the-save-method">The save method</h3>
+<p>The CollectionModel class has a save method that will take care of inserting and updating the collection document. When you instantiate a CollectionModel, the <code>_id</code> field data is set to None by default. Executing the <code>save</code> method will evaluate the <code>_id</code> field. If it is <code>None</code>, then it will run an insert action and update the instance's <code>_id</code> field with the new ObjectId value. Otherwise, an <code>update_one</code> operation will be done. Note that the update type is a <code>$set</code>. The method will return the pymongo operation result.</p>
+<h3 id="the-delete-method">The delete method</h3>
+<p>The CollectionModel class also has a delete method that will take care of deleting the current instance document representation. It will run the collection operation of delete on based on the <code>_id</code> of the document. The method will return the pymongo operation result. </p>
+<h2 id="making-queries">Making queries</h2>
+<p>MongoDB querying system uses JSON to make DB queries. Collection models instances come with a manager attribute which can run queries. The methods for running queries with the manager have the same name as the Collection instance from pymongo.</p>
+<h3 id="collection-manager">Collection Manager</h3>
+<p>The <code>manager</code> attribute is an instance of the <code>CollectionManager</code> class. The collection manager has the task of making every query to the database. As mentioned above, the manager implements the same querying as pymongo but modified to meet the requirements of Flask-MongoDB. </p>
+<p>Queries can be divided into two groups: reads and writes.</p>
+<h4 id="read-queries">Read queries</h4>
+<ul>
+<li><code>find</code>: Returns a document set of copies of the model with the corresponding document values</li>
+<li><code>find_one</code>: Returns a single model copy with the corresponding document values</li>
+</ul>
+<h4 id="write-queries">Write Queries</h4>
+<ul>
+<li><code>insert_one</code>: Inserts one single document into the collection and returns a representation of the model</li>
+<li><code>update_one</code>: Updates only one document in the collection. Default update type is <code>$set</code>. Returns a representation of the model</li>
+<li><code>delete_one</code>: Deletes a single document in the collection, returns the pymongo result</li>
+<li><code>delete_many</code>: Deletes all documents that match the query, returns the pymongo result.</li>
+</ul>
+<h3 id="referencemanager">ReferenceManager</h3>
+<p>The ReferenceManager class is another manager, but for reverse references. A reverse reference is when Model A references Model B, with the reference manager Model B will have access to Model A data after instantiating the model. This manager only supports the <code>find</code> and <code>find_one</code> query methods.</p>
+<h3 id="document-sets">Document Sets</h3>
+<p>The <code>DocumentSet</code> class is a list like class where it contains copies of the model with the corresponding values from the collection documents. Only the <code>find</code> and <code>all</code> functions of the manager return DocumentSet instances. The DocumentSet instance has a <code>Cursor</code> object that is the query result. Iterating through the DocumentSet will return the model representation of the current document in its model form.</p>
+<h4 id="documentset-methods">DocumentSet methods</h4>
+<p>The DocumentSet has many custom methods and wraps many of the Cursor class methods.</p>
+<h5 id="first-method">first method</h5>
+<p>The <code>first</code> method returns the first document of the query result.</p>
+<h5 id="last-method">last method</h5>
+<p>Just like the <code>first</code> method returns the first document of the query result, the <code>last</code> method returns the last one.</p>
+<h5 id="limit-method">limit method</h5>
+<p>The <code>limit</code> method limits the cursor to the first n documents. Returns self for chaining DocumentSet methods.</p>
+<h5 id="sort-method">sort method</h5>
+<p>The <code>sort</code> method sorts the cursor by the provided keys and directions. Returns self for chaining DocumentSet methods.</p>
+<h5 id="count-method">count method</h5>
+<p>The <code>count</code> method returns an int representation of the total count of documents of the cursor.</p>
+<h5 id="run_cursor_method">run_cursor_method</h5>
+<p>This method allows the developer to manually run methods of the <code>Cursor</code> class on the DocumentSet instance which have not been defined for the DocumentSet.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../mongo/" class="btn btn-neutral float-left" title="The MongoDB Class"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../serializers/" class="btn btn-neutral float-right" title="Serializing Data">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/juanmanuel96/flask-mongodb" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../mongo/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../serializers/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
