@@ -107,10 +107,12 @@ class BaseCollection:
 
     def _incoming_data_to_fields(self, incoming: t.Dict, initial=False):
         for name, field in self.fields.items():
-            value = incoming.get(name)
-            if value is None:
-                # Ignore fields that do not exist
+            try:
+                value = incoming[name]
+            except KeyError:
+                # If cannot find field in incoming, keep same field value
                 continue
+
             field.set_data(value)
             if initial:
                 field.set_initial(value)
