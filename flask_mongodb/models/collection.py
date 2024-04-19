@@ -213,7 +213,7 @@ class CollectionModel(BaseCollection):
                                    _field: t.Union[EmbeddedDocumentField, Field]):
             document_obj[_field_name] = {}
             for prop_name, prop_field in _field.properties.items():
-                if isinstance(_field, EmbeddedDocumentField):
+                if isinstance(prop_field, EmbeddedDocumentField):
                     _get_embedded_document(document_obj[_field_name], prop_name, prop_field)
                 else:
                     document[name][prop_name] = prop_field.data
