@@ -19,7 +19,7 @@ class TestModelInstance(BaseAppSetup):
 
     def test_embedded_document_default_values(self):
         m = ModelWithEmbeddedDocument(phone_number={'number': '7559991122'})
-        assert not  m['phone_number']['confirmed'].data
+        assert not m['phone_number']['confirmed'].data
 
     def test_embedded_document_change(self):
         m = ModelWithEmbeddedDocument(phone_number={'number': '7559991122'})
@@ -54,7 +54,7 @@ class TestModelOperations(BaseAppSetup):
 
     def test_empty_insert_one(self):
         with pytest.raises(ValueError):
-            ack = ModelWithDefaultValues().manager.insert_one()
+            ModelWithDefaultValues().manager.insert_one()
 
     def test_insert_one_with_some_fields(self):
         ack = ModelWithDefaultValues().save()

@@ -120,11 +120,30 @@ class BaseCollection:
         # Check for reference fields
         for name, field in self.fields.items():
             if hasattr(field, '_reference'):
-                id_field_of_ref = self[name + '_id']
-                if str(field.data) != str(id_field_of_ref):
-                    field.set_data(id_field_of_ref)
+                id_field_of_ref = getattr(self, f'{name}_id')
+                if str(field.get_data()) != str(id_field_of_ref.get_data()):
+                    field.set_data(id_field_of_ref.get_data())
                     if initial:
-                        field.set_initial(id_field_of_ref)
+                        field.set_initial(id_field_of_ref.get_data())
+
+    def _get_embedded_document(self, document_obj: t.Dict, _field_name: str,
+                               _field: t.Union[EmbeddedDocumentField, Field]):
+        document_obj[_field_name] = {}
+        for prop_name, prop_field in _field.properties.items():
+            if isinstance(_field, EmbeddedDocumentField):
+                self._get_embedded_document(document_obj[_field_name], prop_name, prop_field)
+            else:
+                document_obj[_field_name].update({prop_name: prop_field.data})
+
+    def _traverse_embedded_document(self, change_obj: t.Dict, _name: str,
+                                    _field: t.Union[Field, EmbeddedDocumentField]):
+        for prop_name, prop_field in _field.properties.items():
+            _path = f'{_name}.{prop_name}'
+            if isinstance(prop_field, EmbeddedDocumentField):
+                self._traverse_embedded_document(change_obj, prop_name, prop_field)
+            else:
+                if prop_field.get_data() != prop_field.get_initial():
+                    change_obj[_path] = prop_field.get_data()
 
     @property
     def manager(self) -> CollectionManager:
@@ -142,15 +161,16 @@ class BaseCollection:
     def pk(self, value):
         self._id.set_data(value)
 
-    def modified_fields(self) -> t.Dict[str, t.Union[Field, EmbeddedDocumentField]]:
-        def _traverse_embedded_document(change_obj: t.Dict, _name: str, _field: t.Union[Field, EmbeddedDocumentField]):
+    def modified_fields(self, insert=False) -> t.Dict[str, t.Any]:
+        def _traverse_embedded_document(change_obj: t.Dict, _name: str,
+                                        _field: t.Union[Field, EmbeddedDocumentField], _insert=False):
             for prop_name, prop_field in _field.properties.items():
                 _path = f'{_name}.{prop_name}'
                 if isinstance(prop_field, EmbeddedDocumentField):
                     _traverse_embedded_document(change_obj, prop_name, prop_field)
                 else:
-                    if prop_field.initial != prop_field.data:
-                        change_obj[_path] = prop_field.data
+                    if prop_field.get_data() != prop_field.get_initial():
+                        change_obj[_path] = prop_field.get_data()
 
         change = {}
         for name, field in self._fields.items():
@@ -158,10 +178,15 @@ class BaseCollection:
                 # Skip _id field, it should not be considered as a modified field
                 continue
             if isinstance(field, EmbeddedDocumentField):
-                _traverse_embedded_document(change, name, field)
+                if insert:
+                    self._get_embedded_document(change, name, field)
+                else:
+                    self._traverse_embedded_document(change, name, field)
             else:
-                if field.data != field.initial:
-                    change[name] = field.data
+                if field.get_data() != field.get_initial() and not insert:
+                    change[name] = field.get_data()
+                else:
+                    change[name] = field.get_data()
         return change
 
     def connect(self):
@@ -170,6 +195,7 @@ class BaseCollection:
         """
         if not self._connected:
             from flask_mongodb import current_mongo
+
             db = current_mongo.connections[self.db_alias]
             self.__collection__ = MongoCollection(db, self.collection_name)
             self._connected = True
@@ -229,12 +255,16 @@ class CollectionModel(BaseCollection):
                     document[name] = field.data
             elif isinstance(field, ReferenceIdField):
                 ref = field.reference
+                ref_name = f'{name}_id'
+                if ref_name in exclude:
+                    # Go to the next one if the reference id field is excluded
+                    continue
                 if ref is None:
                     # This should raise an error since the object referenced by another must not be deleted before
                     # the one referencing
-                    document[f'{name}_id'] = ref
+                    document[ref_name] = ref
                 else:
-                    document[f'{name}_id'] = ref.pk
+                    document[ref_name] = ref.pk
             else:
                 document[name] = field.data
 

@@ -59,7 +59,7 @@ class BaseManager:
         model_pk = self._model.pk
         if model_pk is None:
             # It is a new item
-            insert_data = self._model.to_document(exclude=('_id',))
+            insert_data = self._model.modified_fields(insert=True)
             ack = self._model.collection.insert_one(insert_data,
                                                     session=session,
                                                     bypass_document_validation=bypass_validation,

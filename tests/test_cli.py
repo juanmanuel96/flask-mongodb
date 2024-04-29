@@ -143,7 +143,7 @@ def test_create_model():
     assert exists and content_valid
 
 
-def test_check_history(app: Flask):
+def test_check_history(app):
     runner = CliRunner()
 
     with app.app_context():

@@ -108,13 +108,17 @@ class Field(FieldMixin):
         data = self.validate_data(value)
         self.__data__ = data
 
-    def get_data(self) -> t.Union[t.Callable, t.Any]:
-        return self.__data__
-
     def set_initial(self, value: t.Union[t.Callable, t.Any]) -> None:
         self._initial = value
 
+    def get_data(self) -> t.Union[t.Callable, t.Any]:
+        if self._is_callable(self.__data__):
+            return self.__data__()
+        return self.__data__
+
     def get_initial(self) -> t.Union[t.Callable, t.Any]:
+        if self._is_callable(self._initial):
+            return self._initial()
         return self._initial
 
     def run_validation(self, value):
@@ -126,7 +130,7 @@ class Field(FieldMixin):
         return value
 
     def clear(self):
-        # Rever data and initial to emptyfield
+        # Revert data and initial to emptyfield
         self.__data__ = emptyfield()
         self._initial = emptyfield()
 
