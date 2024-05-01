@@ -56,8 +56,14 @@ class TestModelOperations(BaseAppSetup):
         with pytest.raises(ValueError):
             ModelWithDefaultValues().manager.insert_one()
 
-    def test_insert_one_with_some_fields(self):
+    def test_save_on_simple_model(self):
         ack = ModelWithDefaultValues().save()
+        assert ack.acknowledged
+
+    def test_save_on_model_with_embedded_document(self):
+        model = ModelWithEmbeddedDocument(first_name='John', last_name='Doe', phone_number={'number': '7559991122'})
+        ack = model.save()
+
         assert ack.acknowledged
 
     def test_manager_operation_return_data_type(self):

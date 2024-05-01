@@ -130,7 +130,7 @@ class BaseCollection:
                                _field: t.Union[EmbeddedDocumentField, Field]):
         document_obj[_field_name] = {}
         for prop_name, prop_field in _field.properties.items():
-            if isinstance(_field, EmbeddedDocumentField):
+            if isinstance(prop_field, EmbeddedDocumentField):
                 self._get_embedded_document(document_obj[_field_name], prop_name, prop_field)
             else:
                 document_obj[_field_name].update({prop_name: prop_field.data})
@@ -162,16 +162,6 @@ class BaseCollection:
         self._id.set_data(value)
 
     def modified_fields(self, insert=False) -> t.Dict[str, t.Any]:
-        def _traverse_embedded_document(change_obj: t.Dict, _name: str,
-                                        _field: t.Union[Field, EmbeddedDocumentField], _insert=False):
-            for prop_name, prop_field in _field.properties.items():
-                _path = f'{_name}.{prop_name}'
-                if isinstance(prop_field, EmbeddedDocumentField):
-                    _traverse_embedded_document(change_obj, prop_name, prop_field)
-                else:
-                    if prop_field.get_data() != prop_field.get_initial():
-                        change_obj[_path] = prop_field.get_data()
-
         change = {}
         for name, field in self._fields.items():
             if name == '_id':
