@@ -5,7 +5,7 @@ from flask_mongodb.models.document_set import DocumentSet
 from tests.fixtures import BaseAppSetup
 
 from tests.model_for_tests.core.models import ModelForTest, ModelForTest2, ModelWithDefaultValues, \
-    ModelWithEmbeddedDocument, ModelWithEnumField
+    ModelWithEmbeddedDocument, ModelWithEnumField, VeryComplexModel
 
 
 class TestModelInstance(BaseAppSetup):
@@ -116,6 +116,42 @@ class TestModelOperations(BaseAppSetup):
 
     def test_enum_field_with_null_value(self):
         model = ModelWithEnumField(alcohol_enum_field=None)
+        ack = model.save()
+
+        assert ack.acknowledged
+
+    def test_a_very_complex_model(self):
+        model = VeryComplexModel(
+            simple_field='Hello World!',
+            embedded_field={
+                'layer1_simple_field': 'Hello, world!',
+                'layer1_embedded_field': {
+                    'layer2_simple_field': 'Hello World!',
+                    'layer2_enum_filed': 'b',
+                    'layer2_array_field': ['Hello, world!']
+                },
+                'layer1_integer_field': 4
+            },
+            float_field=3.4
+        )
+        ack = model.save()
+
+        assert ack.acknowledged
+
+    def test_a_very_complex_model_with_null_values(self):
+        model = VeryComplexModel(
+            simple_field="Hello World",
+            embedded_field={
+                'layer1_simple_field': "World!",
+                'layer1_embedded_field': {
+                    'layer2_simple_field': "Hello",
+                    'layer2_enum_filed': None,
+                    'layer2_array_field': []
+                },
+                'layer1_integer_field': 3
+            },
+            float_field=55.6
+        )
         ack = model.save()
 
         assert ack.acknowledged

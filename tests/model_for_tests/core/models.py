@@ -43,3 +43,30 @@ class ModelWithEnumField(CollectionModel):
     ALCOHOLS = (*WHISKEY_CHOICES, ('rum', 'Rum'), ('cognac', 'Cognac'))
     whiskey_enum_field = fields.EnumField(choices=WHISKEY_CHOICES, default='whiskey')
     alcohol_enum_field = fields.EnumField(choices=ALCOHOLS, allow_null=True, default=None)
+
+
+class VeryComplexModel(CollectionModel):
+    collection_name = 'very_complex_collection'
+
+    # Layer0
+    simple_field = fields.StringField()
+    embedded_field = fields.EmbeddedDocumentField(
+        properties={
+            'layer1_simple_field': fields.StringField(),
+            'layer1_embedded_field': fields.EmbeddedDocumentField(
+                allow_null=True,
+                default=None,
+                properties={
+                    'layer2_simple_field': fields.StringField(required=False),
+                    'layer2_enum_filed':  fields.EnumField(
+                        allow_null=True,
+                        choices=(('a', 'A'), ('b', 'B')),
+                        default='a'
+                    ),
+                    'layer2_array_field': fields.ArrayField(min_items=1)
+                }
+            ),
+            'layer1_integer_field':  fields.IntegerField(default=1)
+        }
+    )
+    float_field = fields.FloatField(default=1.1)

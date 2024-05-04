@@ -1,3 +1,4 @@
+import logging
 import typing as t
 from copy import deepcopy
 from datetime import date, datetime
@@ -6,6 +7,8 @@ from bson import ObjectId
 from werkzeug.security import generate_password_hash
 
 from flask_mongodb.core.exceptions import FieldError, InvalidChoice
+
+logger = logging.getLogger(__name__)
 
 
 class emptyfield:  # type: ignore
@@ -290,14 +293,17 @@ class EmbeddedDocumentField(Field):
         """
         if not properties or not isinstance(properties, dict):
             raise TypeError('properties param must be a dictionary')
+        if allow_null:
+            logger.warning('Setting allow_null=True will cause issues when saving, due to $jsonSchema properties.\n'
+                           'It is recommended to always pass full document data.')
 
+        self.properties: t.Dict[str, Field] = self._define_properties(properties)
         super().__init__(required=required, allow_null=allow_null, **kwargs)
-        self.properties: t.Dict[str, Field] = self.__define_properties__(properties)
 
     def __getitem__(self, __name: str):
         return self.data[__name]
 
-    def __define_properties__(self, properties: t.Dict) -> t.Dict:
+    def _define_properties(self, properties: t.Dict) -> t.Dict:
         json_field_properties = {}
         for prop_name, prop in properties.items():
             # Validate correct property keys
@@ -326,8 +332,11 @@ class EmbeddedDocumentField(Field):
 
     def set_data(self, value: t.Union[dict, None]):
         value = self.validate_data(value)
-        self._set_properties_data(value)
-        self.__data__ = self.properties
+        if value is None:
+            self.__data__ = None
+        else:
+            self._set_properties_data(value)
+            self.__data__ = self.properties
 
     def __iter__(self):
         return iter(self.data.keys() or [])
