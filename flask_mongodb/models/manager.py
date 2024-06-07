@@ -94,7 +94,7 @@ class BaseManager:
                 continue
             field.set_data(value)
 
-        insert = self._model.to_document(exclude=('_id',))
+        insert = self._model.modified_fields(insert=True)
         ack = self._model.collection.insert_one(insert)
         self._model['_id'] = ack.inserted_id
         return self._model
