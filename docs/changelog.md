@@ -14,6 +14,27 @@ The structure for the changelog will be the following:
 
 <hr>
 
+## v0.2.0
+
+### Features
+
+- Sunsetting of the `setup.py` file for installing the project to adhere to PEP 518 and PEP 621
+- Renamed to `legacy_setup.py` because for some reason my PIP prioritized `setup.py` and because I am lazy decided to rename it before deleting it.
+
+### Fixes
+
+- Fixes issue with install where installing the package would fail to install some dependencies due to how imports were done. I prefer to make this change before fixing the setup file to follow best practices.
+
+### Notes
+
+The reason behind the move to `pyproject.toml` file serves two purposes:
+
+1. Moves in the direction of following more PEP guidelines
+2. Resolve install issue
+3. Begin the process to publish to PyPI
+
+This is the correct path to finally have the proper PyPI package I've always dreamt about. 
+
 ## v0.1.0
 
 ### Features

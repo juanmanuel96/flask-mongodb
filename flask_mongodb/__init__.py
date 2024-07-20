@@ -1,4 +1,5 @@
 import sys
+
 from flask_mongodb.about import PY_VERSION
 from flask_mongodb.core.exceptions import PyVersionInvalid
 
