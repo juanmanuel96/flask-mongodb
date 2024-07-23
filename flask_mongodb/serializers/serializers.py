@@ -1,23 +1,26 @@
 import typing as t
 import itertools
+import logging
 
 from wtforms.form import BaseForm, FormMeta
 from wtforms.fields import Field
 from wtforms.utils import unset_value
 
 from flask_mongodb.core.exceptions import ValidationError
-from flask_mongodb.core.mixins import ModelMixin
 from flask_mongodb.models.collection import CollectionModel
 from flask_mongodb.serializers.exceptions import MissingSerializerModel
 from flask_mongodb.serializers.fields import JSONField
 from flask_mongodb.serializers.meta import SerializerMeta
 
 
+logger = logging.getLogger(__name__)
+
 _default_serializer_meta = SerializerMeta
 
 
 class SerializerBase(BaseForm):
     def __init__(self, fields: dict, prefix="", meta=_default_serializer_meta):
+        logger.warning("Serializers are deprecated. For data validation use WTForms.")
         """
         :param fields:
             A dict or sequence of 2-tuples of partially-constructed fields.
@@ -212,6 +215,8 @@ class ModelSerializer(Serializer):
         The Model Serializer is just and extension of the Serializer by 
         connecting a model to the serializer.
         """
+        logger.warning("ModelSerializer is deprecated, use FlaskMongoDB native ModelForm to incorporate a"
+                       "WTForm class with a FlaskMongoDB CollectionModel class")
         if self.serializer_model:
             assert hasattr(self.serializer_model, '_is_model')
             self._model = self.serializer_model()
@@ -223,7 +228,7 @@ class ModelSerializer(Serializer):
     @property
     def model(self):
         return self._model
-    
+
     @property
     def manager(self):
         return self._model.manager
