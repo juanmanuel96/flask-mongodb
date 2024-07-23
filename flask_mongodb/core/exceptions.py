@@ -104,3 +104,11 @@ class MustRunStartDBCommand(BaseFlaskMongodbException):
 
 class ImproperConfiguration(BaseFlaskMongodbException):
     default_message = 'App has been improperly configured'
+
+
+class NoDatabaseShiftingRequired(BaseFlaskMongodbException):
+    default_message = 'No database shifting required'
+
+
+class idUnmodifiable(BaseFlaskMongodbException):
+    default_message = 'Cannot modify _id field'

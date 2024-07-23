@@ -2,10 +2,11 @@ import typing as t
 from copy import copy
 
 from flask_mongodb.cli.utils import define_schema_validator
+from flask_mongodb.core.exceptions import NoDatabaseShiftingRequired, idUnmodifiable
 from flask_mongodb.core.wrappers import MongoDatabase
 from flask_mongodb.models.collection import CollectionModel
 from flask_mongodb.models.fields import (ArrayField, BooleanField, DatetimeField, Field, StringField, IntegerField,
-                                         FloatField,
+                                         FloatField, EnumField,
                                          EmbeddedDocumentField, ObjectIdField)
 
 MONGODB_BSON_TYPE_MAP = {
@@ -17,7 +18,8 @@ MONGODB_BSON_TYPE_MAP = {
     'objectId': ObjectIdField,
     'bool': BooleanField,
     'date': DatetimeField,
-    'array': ArrayField
+    'array': ArrayField,
+    None: EnumField
 }
 
 
@@ -25,11 +27,9 @@ class Shift:
     def __init__(self, model_class: t.Type[CollectionModel]) -> None:
         self._model = model_class()
         self.collection_schema = None
-        self.should_shift = {
-            'altered_fields': [],
-            'new_fields': [],
-            'removed_fields': []
-        }
+        self.new_fields: t.List[str] = []
+        self.removed_fields: t.List[str] = []
+        self.altered_fields: t.Dict[str, t.Dict[str, bool]] = {}
         self._model_schema = {}
 
     def _get_database(self) -> MongoDatabase:
@@ -56,42 +56,51 @@ class Shift:
     def _get_model_schema(self):
         return self._model_schema
 
-    def _compare_model_to_collection(self, schema_properties: dict, model_fields: t.Dict, field_path=''):
+    def _compare_model_to_collection(self, schema: dict, model_fields: t.Dict, field_path=''):
         """This method will detect model alterations and new fields"""
         for name, field in model_fields.items():
+            # This is to build the path to properties in an embedded document
             if field_path:
                 _path = field_path + '.' + name
             else:
                 _path = name
 
+            # Reference fields are skipped
             if hasattr(field, '_reference'):
                 # Reference fields should be skipped
                 continue
 
+            schema_properties: t.Dict[str, t.Any] = schema['properties']
+            required_fields: t.List[str] = schema['required']
+
             if name not in schema_properties.keys():
                 # First check if the field is new
-                self.should_shift['new_fields'].append(_path)
+                self.new_fields.append(_path)
             else:
-                # Check if the field type has been altered
+                # Detect any changes in the field
                 if name == '_id':
                     # Check that the _id field has not been altered, it is still an ObjectIdField
                     if not isinstance(field, ObjectIdField):
-                        # TODO: Custom Exception
-                        raise Exception('_id field cannot be altered after creation of collection and must be'
-                                        'ObjectIdField')
+                        raise idUnmodifiable('_id field cannot be altered after creation of collection and must be'
+                                             'ObjectIdField')
                 else:
-                    field_properties = schema_properties[name]
-                    bson_type: t.Optional[t.List] = field_properties.get('bsonType')
-                    # First must check if bson_type is an EnumField
-                    if bson_type is None:  # Is Enum type
-                        # Only enum type does not have a bsonType
+                    field_schema_properties = schema_properties[name]
+                    bson_type: t.Optional[t.List] = field_schema_properties.get('bsonType')
+
+                    if bson_type is None:
+                        # First must check if bson_type None for EnumField, if None originally Enum
                         if field.bson_type is not bson_type:
                             # This means it is no longer an EnumField
-                            self.should_shift['altered_fields'].append(_path)
+                            self.altered_fields.update({
+                                _path:
+                                    {
+                                        'new': type(field)
+                                    }
+                            })
                     elif 'object' in bson_type:
                         # Manage Embedded Document Field
-                        inner_properties = field_properties['properties']
-                        self._compare_model_to_collection(inner_properties, field.properties, field_path=_path)
+                        self._compare_model_to_collection(field_schema_properties, field.properties,
+                                                          field_path=_path)
                     else:
                         field_bson: t.List = copy(field.bson_type)  # Get the field's bson_type attribute
                         if field.allow_null:
@@ -99,18 +108,43 @@ class Shift:
 
                         if field_bson is None and bson_type is not None:
                             # Field was altered to a EnumField type
-                            self.should_shift['altered_fields'].append(_path)
+                            self.altered_fields.update({
+                                _path: {
+                                    'replace': True
+                                }
+                            })
                         elif field_bson != bson_type:
                             # The field bson_type attribute is a list and is not the same as the schema BSON type
                             # of the field (such as adding a `null` option)
-                            self.should_shift['altered_fields'].append(_path)
+                            self.altered_fields.update({
+                                _path: {
+                                    'replace': True
+                                }
+                            })
 
-    def _compare_collection_to_model(self, model_fields: dict,
-                                     schema_properties: t.Optional[t.Dict] = None,
-                                     field_path=''):
+                    required_change = None
+                    if field.required and name not in required_fields:
+                        # Field required status got enabled
+                        required_change = True
+                    elif not field.required and name in required_fields:
+                        # Field required status got disabled
+                        required_change = False
+                    else:
+                        # Required status remains unchanged
+                        pass
+
+                    if required_change is not None:
+                        if _path not in self.altered_fields.keys():
+                            self.altered_fields[_path] = {
+                                'replace': False
+                            }
+                        self.altered_fields[_path]['required'] = required_change
+
+    def _compare_collection_to_model(self, model_fields: t.Dict, schema: t.Dict, field_path=''):
         """This method is to detect removed fields"""
         name: str
         bson_type: t.List[str]
+        schema_properties = schema['properties']
         for name, properties in schema_properties.items():
             if field_path:
                 _path = field_path + '.' + name
@@ -118,8 +152,7 @@ class Shift:
                 _path = name
 
             if name not in schema_properties.keys():
-                # TODO: Custom Exception
-                raise Exception(f'Cannot modify schema directly. Field name: {_path}')
+                raise ValueError(f'Cannot modify schema directly. Field name: {_path}')
             else:
                 if 'object' in properties.get('bson_type', []):
                     embedded_field = model_fields[name].properties
@@ -127,7 +160,9 @@ class Shift:
                     self._compare_collection_to_model(embedded_field, embedded_schema, field_path=_path)
                 else:
                     if name not in self._model.fields.keys():
-                        self.should_shift['removed_fields'].append(name)
+                        if name == '_id':
+                            raise idUnmodifiable('Cannot delete _id field')
+                        self.removed_fields.append(name)
 
     def get_collection_data(self):
         db = self._get_database()
@@ -138,22 +173,24 @@ class Shift:
     def verify(self):
         """Only applies to models with a schema"""
         collection_schema = self._get_collection_schema()
-        schema_properties = collection_schema['$jsonSchema']['properties']
+        schema = collection_schema['$jsonSchema']
 
-        self._compare_model_to_collection(schema_properties, self._model.fields)
-        self._compare_collection_to_model(self._model.fields, schema_properties)
+        # This section will verify which fields have modified, created, or deleted
+        self._compare_model_to_collection(schema, self._model.fields)
+        self._compare_collection_to_model(self._model.fields, schema)
+        return any(self.removed_fields) or any(self.new_fields) or any(self.altered_fields.keys())
 
-    def examine(self):
+    def examine(self) -> bool:
         if self._model.schemaless:
             return False
 
-        self.verify()
-        return any([True if f else False for f in self.should_shift.values()])
+        changes = self.verify()
+        return changes
 
     def shift(self):
         def _find_embedded_property_default(embedded_field: EmbeddedDocumentField, _p_path: list):
-            prop_name = _p_path.pop()
-            doc_property: Field = embedded_field[prop_name]
+            prop_name = _p_path.pop(0)  # Get the top level field name
+            doc_property: Field = embedded_field.properties[prop_name]
             if isinstance(doc_property, EmbeddedDocumentField):
                 return _find_embedded_property_default(doc_property, _p_path)
             else:
@@ -161,20 +198,18 @@ class Shift:
 
         examine = self.examine()
         if not examine:
-            # If nothing has to be done, then exit
-            # TODO: Make a better exit that provides better information
-            return False
+            raise NoDatabaseShiftingRequired()
 
         db = self._get_database()
         collection = self._get_collection(db)
         field_path: str
 
         # First manage fields that have been removed
-        for field_path in self.should_shift['removed_fields']:
-            collection.update_many({}, {'$unset': {field_path: 1}}, bypass_document_validation=True)
+        for field_path in self.removed_fields:
+            collection.update_many({}, {'$unset': {field_path: 1}})
 
         # Then add new fields
-        for field_path in self.should_shift['new_fields']:
+        for field_path in self.new_fields:
             if '.' in field_path:
                 # New field in an embedded document
                 property_path = field_path.split('.')
@@ -184,21 +219,20 @@ class Shift:
             else:
                 model_field = self._model.fields[field_path]
                 value = model_field.data
-            collection.update_many({}, {'$set': {field_path: value}}, bypass_document_validation=True)
+            collection.update_many({}, {'$set': {field_path: value}})
 
         # Finally, modify altered fields
-        # TODO: EnumField during an update will set all with the default value, should first check if existing
-        #  value is in choices and leave that one as such, otherwise use the default
-        for field_path in self.should_shift['altered_fields']:
-            if '.' in field_path:
-                property_path = field_path.split('.')
-                field = property_path.pop(0)
-                model_field = self._model.fields[field]
-                value = _find_embedded_property_default(model_field, property_path)
-            else:
-                model_field = self._model.fields[field_path]
-                value = model_field.data
-            collection.update_many({}, {'$set': {field_path: value}}, bypass_document_validation=True)
+        for field_path, mod in self.altered_fields.items():
+            if mod['replace']:
+                if '.' in field_path:
+                    property_path = field_path.split('.')
+                    field = property_path.pop(0)
+                    model_field = self._model.fields[field]
+                    value = _find_embedded_property_default(model_field, property_path)
+                else:
+                    model_field = self._model.fields[field_path]
+                    value = model_field.data
+                collection.update_many({}, {'$set': {field_path: value}})
 
         # Create the new schema
         self._set_model_schema()

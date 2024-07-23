@@ -26,8 +26,7 @@ class BaseAppSetup:
     @pytest.fixture(scope='class', autouse=True)
     def application(self):
         if not self.MODELS:
-            # TODO: Create custom exception
-            raise Exception('Missing models')
+            raise ValueError('Missing models')
         
         self.APP_CONFIG.update(MODELS=self.MODELS)
         _app = Flask(__name__)

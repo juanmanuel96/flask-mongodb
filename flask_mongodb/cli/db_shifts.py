@@ -1,8 +1,10 @@
 import click
 import flask.cli
+import pymongo
 from click import echo
 
 from flask_mongodb.cli.utils import add_new_collection, create_collection, start_database, get_models_from_app
+from flask_mongodb.core.exceptions import NoDatabaseShiftingRequired
 from flask_mongodb.models.shitfs.history import create_db_shift_history
 from flask_mongodb.models.shitfs.shift import Shift
 
@@ -14,18 +16,28 @@ def db_shift():
 
 @db_shift.command('history', help='Show the shift history')
 @click.option('--database', '-d', default='main', help='Specify database')
+@click.option('--collection', '-c', help='Specify model collection name')
+@click.option('--order', '-o', default='asc', help='Ordering (default: asc)')
 @flask.cli.with_appcontext
-def show_shifts(database):
+def show_shifts(database, collection, order):
     from flask_mongodb import current_mongo
+
+    ordering = pymongo.ASCENDING if order == 'asc' else pymongo.DESCENDING
+
     ShiftHistory = current_mongo.collections[database]['shift_history']
     history = ShiftHistory()
-    data = history.manager.all()
+
+    if collection:
+        data = history.manager.filter(db_collection=collection).sort(('shifted', ordering))
+    else:
+        data = history.manager.all().sort(('shifted', ordering))
 
     if data.count() == 0:
         echo('No history yet, execute the run command to make a history')
     else:
+        echo('History:')
         for d in data:
-            echo(f'{d.db_collection.data} {d.shifted.data}')
+            echo(f'Collection: {d.db_collection.data} | Datetime: {d.shifted.data}')
 
 
 @db_shift.command('examine', help="Determine if must run a shift")
@@ -55,7 +67,7 @@ def examine(database, collection):
             if val:
                 echo(name)
     else:
-        echo(f'No collection requires shifting in {database}')
+        echo('No shifting required')
 
 
 @db_shift.command('run', help='Shift the database')
@@ -67,22 +79,32 @@ def run(database, collection):
     from flask_mongodb import current_mongo
 
     models = get_models_from_app(current_app)
-    ShiftHisotry = current_mongo.collections[database]['shift_history']()
+    ShiftHistory = current_mongo.collections[database]['shift_history']()
 
     if collection:
         models = {collection: models[collection]}
 
+    shifted = False
     for m in models.values():
         shift = Shift(m)
-        shift.shift()
-        ShiftHisotry.manager.insert_one(
-            db_collection=m.collection_name,
-            new_fields=shift.should_shift['new_fields'] or None,
-            removed_fields=shift.should_shift['removed_fields'] or None,
-            altered_fields=shift.should_shift['altered_fields'] or None
-        )
+        try:
+            shifted = shift.shift()
+        except NoDatabaseShiftingRequired:
+            # Ignore collections that do not need shifting
+            continue
 
-    echo('Done shifting')
+        if shifted:
+            ShiftHistory.manager.insert_one(
+                db_collection=m.collection_name,
+                new_fields=shift.new_fields or None,
+                removed_fields=shift.removed_fields or None,
+                altered_fields=[shift.altered_fields] if shift.altered_fields else None
+            )
+
+    if shifted:
+        echo('Done shifting')
+    else:
+        echo('No shifting required')
 
 
 @db_shift.command('start-db', help='Create new DB collections')

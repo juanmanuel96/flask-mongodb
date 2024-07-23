@@ -4,7 +4,7 @@ from bson import ObjectId
 from pymongo.client_session import ClientSession
 from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 
-from flask_mongodb.core.exceptions import OperationNotAllowed
+from flask_mongodb.core.exceptions import OperationNotAllowed, CollectionException
 from flask_mongodb.models.document_set import DocumentSet
 
 
@@ -108,8 +108,7 @@ class BaseManager:
         update = {update_type: update}
         ack = self._model.collection.update_one(query, update, **options)
         if not ack.acknowledged:
-            # TODO: Custom Exception
-            raise Exception('Insert not acknowledged')
+            raise CollectionException('Insert not acknowledged')
         return self.find_one(**query)
     
     def delete_one(self, query, **options) -> DeleteResult:
