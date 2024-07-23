@@ -1,6 +1,6 @@
 [project]
 name = 'Flask-MongoDB'
-version = "0.2.1"
+version = "0.3.0-dev1"
 description = 'A Flask extension for connecting a MongoDB instance'
 readme = "README.md"
 authors = [{ name = "Juan Vazquez", email = "juanmapr913@gmail.com" }]
