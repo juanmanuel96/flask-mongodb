@@ -1,7 +1,8 @@
 import typing as t
-from flask.views import MethodView
-from flask_mongodb.core.exceptions import MissingViewModelException
 
+from flask.views import MethodView
+
+from flask_mongodb.core.exceptions import MissingViewModelException
 from flask_mongodb.core.mongo import CollectionModel
 
 
@@ -15,8 +16,7 @@ class ModelView(MethodView):
         else:
             raise MissingViewModelException()
         super().__init__()
-    
+
     @property
     def model(self):
         return self._model
-

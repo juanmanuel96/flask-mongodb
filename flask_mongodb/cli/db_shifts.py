@@ -28,9 +28,9 @@ def show_shifts(database, collection, order):
     history = ShiftHistory()
 
     if collection:
-        data = history.manager.filter(db_collection=collection).sort(('shifted', ordering))
+        data = history.manager.filter(db_collection=collection).sort([('shifted', ordering)])
     else:
-        data = history.manager.all().sort(('shifted', ordering))
+        data = history.manager.all().sort([('shifted', ordering)])
 
     if data.count() == 0:
         echo('No history yet, execute the run command to make a history')

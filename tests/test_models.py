@@ -3,7 +3,6 @@ from pymongo.errors import WriteError
 
 from flask_mongodb.models.document_set import DocumentSet
 from tests.fixtures import BaseAppSetup
-
 from tests.model_for_tests.core.models import ModelForTest, ModelForTest2, ModelWithDefaultValues, \
     ModelWithEmbeddedDocument, ModelWithEnumField, VeryComplexModel
 

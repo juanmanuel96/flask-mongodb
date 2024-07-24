@@ -47,6 +47,7 @@ class DocumentSet(InimitableObject):
     def limit(self, number: int):
         """
         Limit the number of elements.
+
         :param number: Integer to limit the DocumentSet
         :return: Self
         """
@@ -58,6 +59,7 @@ class DocumentSet(InimitableObject):
         Sort the DocumentSet by the sorting list. The sorting param must be a tuple of tuples, where the first
         element is a field name and the second the sorting direction. For direction use :data:`pymongo.ASCENDING` or
         :data:`pymongo.DESCENDING`.
+
         :param sorting: Tuple of tuples of string and integer
         :return: Self
         """

@@ -7,6 +7,7 @@ from flask import Flask
 from flask_mongodb import MongoDB, current_mongo
 from flask_mongodb.cli.cli import create_model
 from flask_mongodb.cli.db_shifts import db_shift
+from flask_mongodb.core.exceptions import NoDatabaseShiftingRequired
 from flask_mongodb.core.wrappers import MongoConnect
 from flask_mongodb.models.shitfs.shift import Shift
 from tests.model_for_tests.cli.shift.models import ModelForTest
@@ -79,16 +80,20 @@ def test_shifting(app_for_shift):
 
         # Have to call Shift class directly since in actual implementation requires modification of a file
         # and during execution of test, file changes are not captured real time
-        s = Shift(ShiftModel_T)
-        s.shift()
+        shift = Shift(ShiftModel_T)
+        try:
+            shifted = shift.shift()
+        except NoDatabaseShiftingRequired:
+            # Ignore collections that do not need shifting
+            pass
 
-        shift_history.set_model_data({
-            'db_collection': ShiftModel_T.collection_name,
-            'new_fields': s.should_shift['new_fields'] or None,
-            'removed_fields': s.should_shift['removed_fields'] or None,
-            'altered_fields': s.should_shift['altered_fields'] or None
-        })
-        shift_history.save()
+        if shifted:
+            shift_history.manager.insert_one(
+                db_collection=ShiftModel_T.collection_name,
+                new_fields=shift.new_fields or None,
+                removed_fields=shift.removed_fields or None,
+                altered_fields=[shift.altered_fields] if shift.altered_fields else None
+            )
 
         # Get the saved history to compare
         history = shift_history.manager.find_one(_id=shift_history.pk)
@@ -101,18 +106,11 @@ def test_no_shift_necessary(app_for_shift):
     with app_for_shift.app_context():
         runner.invoke(db_shift, ['start-db'])
 
-        shift_history = current_mongo.collections[ShiftModel_T.db_alias]['shift_history']()
-
         # Have to call Shift class directly since in actual implementation requires modification of a file
         # and during execution of test, file changes are not captured real time
-        s = Shift(ModelForTest)
-        shift_res = s.shift()
-
-        # Get the saved history to compare
-        history_count = shift_history.manager.all().count()
-        res = (not shift_res and history_count == 0)
-
-    assert res, 'Shift was not achieved'
+        with pytest.raises(NoDatabaseShiftingRequired):
+            s = Shift(ModelForTest)
+            s.shift()
 
 
 def test_add_collection(app: Flask):
