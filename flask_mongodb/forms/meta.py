@@ -17,8 +17,7 @@ class CollectionModelFormMeta(DefaultMeta):
 
     def __init__(self) -> None:
         if self.model is None:
-            # TODO: Custom error
-            raise ValueError("model must be set on the Meta class")
+            raise AttributeError("model must be set on the Meta class")
     
     @property
     def csrf(self):
@@ -39,8 +38,3 @@ class CollectionModelFormMeta(DefaultMeta):
     @property
     def csrf_class(self):
         return self._csrf_class
-
-    @classmethod
-    def assign_collection_model(cls, model: t.Type[CollectionModel]):
-        cls.model = model
-        return cls
