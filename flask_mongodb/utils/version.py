@@ -21,3 +21,7 @@ def get_version(version_info: t.Tuple[int, int, int, str,  int]) -> str:
         return version + f'-{version_state}{state_number}'
     version += f'-{version_state}{state_number}'
     return version
+
+
+__version_info__ = (0, 3, 0, 'dev', 2)
+__version__ = get_version(__version_info__)

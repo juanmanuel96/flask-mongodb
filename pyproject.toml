@@ -1,6 +1,5 @@
 [project]
 name = 'Flask-MongoDB'
-version = "0.3.0-dev1"
 description = 'A Flask extension for connecting a MongoDB instance'
 readme = "README.md"
 authors = [{ name = "Juan Vazquez", email = "juanmapr913@gmail.com" }]
@@ -30,6 +29,9 @@ dependencies = [
     "Werkzeug~=2.3.8",
     "flask-Login==0.6.3"
 ]
+dynamic = [
+    "version"
+]
 
 [project.scripts]
 flask-mongodb = 'flask_mongodb.cli.cli:main'
@@ -45,3 +47,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages]
 find = {"include" = ["flask_mongodb*"], "exclude" = ['tests', 'tests.*']}
+
+[tool.setuptools.dynamic]
+version = {attr = "flask_mongodb.utils.version.__version__"}
