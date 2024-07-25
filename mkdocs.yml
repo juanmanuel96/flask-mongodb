@@ -8,7 +8,7 @@ nav:
   - Database Operations:
     - Models: collections.md
   - Data Validation:
-    - Serializing Data: serializers.md
+    - Forms: forms.md
   - CLI Tool:
     - flask-mongodb: cli.md
   - API Reference:

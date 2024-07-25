@@ -14,6 +14,20 @@ The structure for the changelog will be the following:
 
 <hr>
 
+## v0.3.0
+
+### Features
+
+- Sunsetting of Serializer and SerializerModel classes
+- New `CollectionModelForm` class for data validation in seamless integration with WTForms 
+- Shift `run` and `examine` commands take into consideration if a field has altered its required status
+
+### Fixes
+
+- Fixed shift subcommands
+- Improved shifting algorithm
+- Improved CLI feedback
+
 ## v0.2.0
 
 ### Features

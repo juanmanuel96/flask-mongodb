@@ -74,14 +74,12 @@ Disconnect your model from the collection.
 
 _meth_ <span class="class_attr">save</span>(_bypass_validation=False_)
 
-Save model data in the data base.
+Save model data in the database.
 
 **Parameters**
 
 - `session`: Pymongo session.
-
 - `bypass_validation`: Bypass document validation at the database level. While the option is available, it should be use as little as possible to avoid bad data in database.
-
 - `comment`: A comment for the insert or update command.
 
 _class_ <span class="py_class">flask_mongodb.CollectionModel</span>(_\*\*field_values_)
@@ -264,9 +262,48 @@ Run a method from the cursor class in your document set. It cannot be a magic me
 * `*args`: Args to pass to the pymongo Cursor method
 * `**kwargs`: Keyword arguments to pass to the pymongo Cursor method
 
+## Data Validation
 
-## Serializers
+_class_ <span class='py_class'>flask_mongodb.forms.collection.CollectionModelForm</span>(_formdata=None, obj=None, prefix="", data=None, meta=None, instance=None, **kwargs_)
 
-_class_ <span class='py_class'>flask_mongodb.serializers.Serializer</span>(_data=None, formdata=None, obj=None, prefix="", meta=None, **kwargs_)
+`WTForms.Form` class extension that integrates with `flask_mongodb.CollectionModel`.
 
-A data validation class.
+**Parameters**
+
+* `formdata`: Input data from a form of a request in the multi_dict format.
+* `obj`: Any sort of object to take data from its attributes. Only used if formdata is not provided.
+* `prefix`: Field name prefixes.
+* `data`: Dict object where key if the field name and the value the data of field.
+* `meta`: Additional values to pass to the Meta class
+* `instance`: CollectionModel instance for the model
+
+_property_ <span class="class_attr">data</span>
+
+Returns the form data in key-value pairs.
+
+_meth_ <span class="class_attr">validate</span>(_extra_validators=None_)
+
+Overrides the `wtforms.Form` validate method to flag when the form was validated.
+
+**Parameters**
+
+* `extra_validators`: List of functions for extra data validators.
+
+_meth_ <span class="class_attr">save</span>(_session=None, bypass_validation=False, comment=None_)
+
+Saves the validated data in the database using the CollectionModel save method.
+
+**Parameters**
+
+* `session`: Pymongo session.
+* `bypass_validation`: Bypass document validation at the database level. While the option is available, it should be use as little as possible to avoid bad data in database.
+* `comment`: A comment for the insert or update command.
+
+_meth_ <span class="class_attr">delete</span>(_session=None, comment=None_)
+
+Executes the CollectionModel delete method. 
+
+**Parameters**
+
+* `session`: Pymongo session
+* `comment`: A comment for the delete command
