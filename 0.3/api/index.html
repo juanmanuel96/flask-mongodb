@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>API Reference - Flask-MongoDB</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../stylesheet/extra.css" rel="stylesheet" />
+        <link href="../css/version-select.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "API Reference";
+        var mkdocs_page_input_path = "api.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Flask-MongoDB
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../mongo/">The MongoDB Class</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Database Operations</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../collections/">Models</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Data Validation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../forms/">Forms</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">CLI Tool</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../cli/">flask-mongodb</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">API Reference</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#the-mongodb-object">The MongoDB object</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#collection-models">Collection Models</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#model-fields">Model fields</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#managers">Managers</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#documentset">DocumentSet</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#data-validation">Data Validation</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Changelog</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../changelog/">Changelog</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Flask-MongoDB</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">API Reference</li>
+      <li class="breadcrumb-item active">API Reference</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/juanmanuel96/flask-mongodb/edit/master/docs/api.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="api-reference">API Reference</h1>
+<p>This part of the documentation covers all of the interfaces Flask-MongoDB has to offer. </p>
+<h2 id="the-mongodb-object">The MongoDB object</h2>
+<p><em>class</em> <span class='py_class'>flask_mongodb.MongoDB</span>(<em>app=None</em>)</p>
+<p>The MongoDB object connects your Flask instance to a MongoDB server. To configure the application, you may pass the Flask app during the instantiation of the MongoDB object or using the <code>init_app</code> method.</p>
+<p><em>meth</em> <span class="class_attr">disconnect</span>(<em>using='main'</em>)</p>
+<p>Closes the connection of the desired database by alias.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>using</code>: Alias of the database to disconnect.</li>
+</ul>
+<p><em>property</em> <span class="class_attr">collections</span></p>
+<p>Returns a dictionary of the registered collections per database alias.</p>
+<p><em>property</em> <span class="class_attr">connections</span></p>
+<p>Returns a dictionary of the MongoDatabase instances per database alias.</p>
+<h2 id="collection-models">Collection Models</h2>
+<p><em>class</em> <span class="py_class">flask_mongodb.models.collection.BaseCollection</span>()</p>
+<p>The CollectionModel object is a representation of the collection in the database. </p>
+<p><em>attr</em> <span class="class_attr">collection_name</span></p>
+<p>The name of the collection in the database. This attribute <strong>MUST</strong> be given or an error will be raised.</p>
+<p><em>attr</em> <span class="class_attr">db_alias</span>='main'</p>
+<p>Default detabase alias the collection belongs to.</p>
+<p><em>attr</em> <span class="class_attr">schemaless</span>=False</p>
+<p>Defines if your collection has a schema or not.</p>
+<p><em>attr</em> <span class="class_attr">validation_level</span>='strict'</p>
+<p>MongoDB collection validation level.</p>
+<p><em>attr</em> <span class="class_attr">manager_class</span>=<span class="class_attr">CollectionManager</span></p>
+<p>Manager class for the collection.</p>
+<p><em>property</em> <span class="class_attr">manager</span></p>
+<p>Property for the manager instance. </p>
+<p><em>proterty</em> <span class="class_attr">fields</span></p>
+<p>Property for the model's fields.</p>
+<p><em>property</em> <span class="class_attr">pk</span></p>
+<p>Property for the _id field of the model, the primary key.</p>
+<p><em>meth</em> <span class="class_attr">connect</span>()</p>
+<p>Create a connection between your model and the collection. </p>
+<blockquote>
+<p><strong>NOTE:</strong> This requires your application to be at the top of the context stack.</p>
+</blockquote>
+<p><em>meth</em> <span class="class_attr">disconnect</span>()</p>
+<p>Disconnect your model from the collection.</p>
+<p><em>meth</em> <span class="class_attr">save</span>(<em>bypass_validation=False</em>)</p>
+<p>Save model data in the database.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>session</code>: Pymongo session.</li>
+<li><code>bypass_validation</code>: Bypass document validation at the database level. While the option is available, it should be use as little as possible to avoid bad data in database.</li>
+<li><code>comment</code>: A comment for the insert or update command.</li>
+</ul>
+<p><em>class</em> <span class="py_class">flask_mongodb.CollectionModel</span>(<em>**field_values</em>)</p>
+<p>Inherits from BaseCollection. Base class for all your models to inherit from. Use keyword arguments to give initial values to your desired fields.</p>
+<p><em>meth</em> <span class="class_attr">set_model_data</span>(<em>data</em>)</p>
+<p>Sets the model fields values with the provided data. The <code>data</code> parameter must be a dictionary where the keys must be strings.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>data</code>: Data to give each field, keys must be string with the name of the fields</li>
+</ul>
+<p><em>property</em> <span class="class_attr">collection</span></p>
+<p>Property for getting the <code>MongoCollection</code> instance. Will return <code>None</code> if the model hasn't been connected.</p>
+<h2 id="model-fields">Model fields</h2>
+<p><em>class</em> <span class='py_class'>flask_mongodb.models.fields.Field</span>(<em>required=True, allow_null=False, default=None, clean_data_func=None</em>)</p>
+<p>Base class for all fields to inherit from.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>required</code>: Determine if the field is required, default <code>True</code></li>
+<li><code>allow_null</code>: Determine if null values are allowed, default <code>False</code></li>
+<li><code>default</code>: Default value of the field, default <code>None</code></li>
+<li><code>clean_data_func</code>: Function to be executed when fetching the field value, default <code>None</code></li>
+</ul>
+<p><em>meth</em> <span class="class_attr">set_data</span>(<em>value</em>)</p>
+<p>This method sets the field's value. It must be overriden by child classes to properly assign the value with the correct type.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>value</code>: Value to set for the field</li>
+</ul>
+<p><em>meth</em> <span class="class_attr">get_data</span>()</p>
+<p>Returns the field's value. This method does not need to be overriden, but you can if you wish to do some opertation before the data is returned.</p>
+<p><em>meth</em> <span class="class_attr">run_validation</span>(<em>value</em>)</p>
+<p>Method for running the field's <code>validate_data</code> method if it has not been validated.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>value</code>: Value to be validated</li>
+</ul>
+<p><em>meth</em> <span class="class_attr">validate_data</span>(<em>value</em>)</p>
+<p>Method for validating the incomming data for the field. After it has been ran, it sets the <code>_validated</code> flag to True. When creating a custom field, this method's super must be executed after the validation logic.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>value</code>: Value to be validated</li>
+</ul>
+<p><em>meth</em> <span class="class_attr">clean_data</span>()</p>
+<p>Exevutes the <code>clean_data_func</code> if it has been provided, otherwise returns the field's value.</p>
+<p><em>meth</em> <span class="class_attr">clear</span>()</p>
+<p>Clears the field's value, sets it to None.</p>
+<p><em>property</em> <span class="class_attr">data</span></p>
+<p>Property for the field's value. If the data is callable, the function is executed and the return value is returned. Otherwise, executes the <code>get_data</code> method.</p>
+<p><em>class</em> <span class='py_class'>flask_mongodb.models.fields.ObjectIdField</span>(<em>required=True, allow_null=False, default=ObjectId</em>)</p>
+<p>Field type that represents an ObjectId item in a MongoDB collection.</p>
+<p><em>class</em> <span class='py_class'>flask_mongodb.models.fields.StringField</span>(<em>min_length=0, max_length=0, required=True, allow_null=False, default=''</em>)</p>
+<p>Field type that represents an string item in a MongoDB collection.</p>
+<p><em>class</em> <span class='py_class'>flask_mongodb.models.fields.PasswordField</span></p>
+<p>Inherits from <code>StringField</code>, but hashes the data.</p>
+<p><em>class</em> <span class='py_class'>flask_mongodb.models.fields.IntegerField</span>(<em>required: bool = True, allow_null=False, default=0</em>)</p>
+<p>Field type that represents an integer item in a MongoDB collection.</p>
+<p><em>class</em> <span class='py_class'>flask_mongodb.models.fields.FloatField</span>(<em>required: bool = True, allow_null=False, default=0.0</em>)</p>
+<p>Field type that represents a double item in a MongoDB collection.</p>
+<h2 id="managers">Managers</h2>
+<p><em>class</em> <span class='py_class'>flask_mongodb.models.manager.BaseManager</span>(<em>model=None</em>)</p>
+<p>Manager class for all models. Takes in the current model as parameter. </p>
+<p><span class="class_attr">find</span>(<em>**filter</em>)</p>
+<p>Returns a <code>DocumentSet</code> with all of the found documents set by the filter. To get all documents in the collection, do not provider a filter.</p>
+<p><span class="class_attr">all</span>()</p>
+<p>This method is the same as running the <code>find</code> method without any filters.</p>
+<p><span class="class_attr">find_one</span>(<em>**filter</em>)</p>
+<p>Get the first document found by the filter. Returns in model representation of the document.as</p>
+<p><span class="class_attr">insert_one</span>(<em>insert_data=None, **options</em>)</p>
+<p>Insert a single document into the database. With the <code>options</code> kwargs, you can pass pymongo and MongoDB optins to the pymongo counterpart method.</p>
+<p><span class="class_attr">update_one</span>(<em>query, update, update_type='$set', **options</em>)</p>
+<p>Update the first document that meets the filter with the desired update. By default, the update type is set to <code>$set</code> but it can be modified to other MongoDB update types such as <code>$push</code>.</p>
+<p><span class="class_attr">delete_one</span>(<em>query, **options</em>)</p>
+<p>Delete the first document that meets the query filter. </p>
+<p><span class="class_attr">delete_many</span>(<em>query, **options</em>)</p>
+<p>Delete all every document that meets the query filter. </p>
+<p><em>class</em> <span class='py_class'>flask_mongodb.models.manager.CollectionManager</span>(<em>model=None</em>)</p>
+<p>Main manager class for all models. When creating a custom manager class, inherit from this class.</p>
+<p><em>class</em> <span class='py_class'>flask_mongodb.models.manager.RefrenceManager</span>(<em>model=None, field_name=None</em>)</p>
+<p>This manager handles the reverse references when a model has a RefrenceIdField. It inherits from the <code>BaseManager</code> class with only the <code>find</code>, <code>all</code>, and <code>find_one</code> methods enabled. </p>
+<h2 id="documentset">DocumentSet</h2>
+<p><em>class</em> <span class='py_class'>flask_mongodb.models.document_set.DocumentSet</span>(<em>model=None</em>)</p>
+<p>A list-like object that represents the results of a query. Lazily loads each document in model representation.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>model</code>: Model class for the document set, default <code>None</code></li>
+</ul>
+<p><em>meth</em> <span class="class_attr">first</span>()</p>
+<p>Get the first document in model representation of the query result.</p>
+<p><em>meth</em> <span class="class_attr">last</span>()</p>
+<p>Get the last document in model representation of the query result.</p>
+<p><em>meth</em> <span class="class_attr">limit</span>(<em>number</em>)</p>
+<p>Limit the number of documents from the query result.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>number</code>: Total documents to get from a larger set</li>
+</ul>
+<p><em>meth</em> <span class="class_attr">sort</span>(<em>key_or_list, direction=None</em>)</p>
+<p>Sort the document in the ordered desired. Use the same sorting convention you would use for a pymongo Cursor.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>key_or_list</code>: Key or list of keys to apply the sorting over</li>
+<li><code>direction</code>: Direction to which make the sorting, default <code>None</code>. Use <code>pymongo.ASCENDING</code> or <code>pymongo.DESCENDING</code> for the <code>direction</code> parameter</li>
+</ul>
+<p><em>meth</em> <span class="class_attr">count</span>()</p>
+<p>Return the total number of documents from the query.</p>
+<p><span class="class_attr">run_cursor_method</span>(<em>meth_name, *args, **kwargs</em>)</p>
+<p>Run a method from the cursor class in your document set. It cannot be a magic method (methods that begin with "_") nor any of the predefiend of the class, or the clone method.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>meth_name</code>: Name of the method of the cursor to run</li>
+<li><code>*args</code>: Args to pass to the pymongo Cursor method</li>
+<li><code>**kwargs</code>: Keyword arguments to pass to the pymongo Cursor method</li>
+</ul>
+<h2 id="data-validation">Data Validation</h2>
+<p><em>class</em> <span class='py_class'>flask_mongodb.forms.collection.CollectionModelForm</span>(<em>formdata=None, obj=None, prefix="", data=None, meta=None, instance=None, **kwargs</em>)</p>
+<p><code>WTForms.Form</code> class extension that integrates with <code>flask_mongodb.CollectionModel</code>.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>formdata</code>: Input data from a form of a request in the multi_dict format.</li>
+<li><code>obj</code>: Any sort of object to take data from its attributes. Only used if formdata is not provided.</li>
+<li><code>prefix</code>: Field name prefixes.</li>
+<li><code>data</code>: Dict object where key if the field name and the value the data of field.</li>
+<li><code>meta</code>: Additional values to pass to the Meta class</li>
+<li><code>instance</code>: CollectionModel instance for the model</li>
+</ul>
+<p><em>property</em> <span class="class_attr">data</span></p>
+<p>Returns the form data in key-value pairs.</p>
+<p><em>meth</em> <span class="class_attr">validate</span>(<em>extra_validators=None</em>)</p>
+<p>Overrides the <code>wtforms.Form</code> validate method to flag when the form was validated.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>extra_validators</code>: List of functions for extra data validators.</li>
+</ul>
+<p><em>meth</em> <span class="class_attr">save</span>(<em>session=None, bypass_validation=False, comment=None</em>)</p>
+<p>Saves the validated data in the database using the CollectionModel save method.</p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>session</code>: Pymongo session.</li>
+<li><code>bypass_validation</code>: Bypass document validation at the database level. While the option is available, it should be use as little as possible to avoid bad data in database.</li>
+<li><code>comment</code>: A comment for the insert or update command.</li>
+</ul>
+<p><em>meth</em> <span class="class_attr">delete</span>(<em>session=None, comment=None</em>)</p>
+<p>Executes the CollectionModel delete method. </p>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>session</code>: Pymongo session</li>
+<li><code>comment</code>: A comment for the delete command</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../cli/" class="btn btn-neutral float-left" title="flask-mongodb"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../changelog/" class="btn btn-neutral float-right" title="Changelog">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/juanmanuel96/flask-mongodb" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../cli/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../changelog/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+      <script src="../js/version-select.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
