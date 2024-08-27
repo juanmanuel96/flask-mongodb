@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import date, datetime
 
 from bson import ObjectId
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from flask_mongodb.core.exceptions import FieldError, InvalidChoice
 
@@ -27,7 +27,7 @@ class FieldMixin:
 
 
 class Field(FieldMixin):
-    bson_type: list = None
+    bson_type: t.List | None = None
     _validator_description = None
 
     def __init__(self, required: bool = True, allow_null=False,
@@ -91,16 +91,12 @@ class Field(FieldMixin):
     def data(self) -> t.Any:
         if isinstance(self.__data__, emptyfield):
             return self.__data__.get()
-        if self._is_callable(self.__data__):
-            return self.clean_data_func(self.get_data()())
         return self.clean_data_func(self.get_data())
 
     @property
     def initial(self):
         if isinstance(self._initial, emptyfield):
             return self._initial.get()
-        if self._is_callable(self._initial):
-            return self.clean_data_func(self.get_initial()())
         return self.clean_data_func(self.get_initial())
 
     @property
@@ -192,12 +188,12 @@ class PasswordField(StringField):
         else:
             self.__data__ = value
 
+    def compare_password(self, password: str) -> bool:
+        return check_password_hash(self.get_data(), password)
+
 
 class IntegerField(Field):
     bson_type = ['int']
-
-    def __init__(self, required: bool = True, allow_null=False, **kwargs) -> None:
-        super().__init__(required, allow_null, **kwargs)
 
     def validate_data(self, value):
         if not self._check_if_allow_null(value):
@@ -236,13 +232,40 @@ class BooleanField(Field):
         return super().validate_data(value)
 
 
-class DateField(Field):
+class DatetimeField(Field):
     bson_type = ['date']
 
-    def __init__(self, format='%Y-%m-%d', required: bool = True, allow_null=False,
+    def __init__(self, required: bool = True, allow_null=False, date_format: str = "%Y-%m-%dT%H:%M:%S.%f",
                  **kwargs) -> None:
-        self.format = format
         super().__init__(required=required, allow_null=allow_null, **kwargs)
+        self.format = date_format
+
+    def validate_data(self, value: t.Union[str, datetime, date]):
+        if not self._check_if_allow_null(value):
+            if not any([isinstance(value, valid) for valid in [str, datetime, date]]):
+                raise TypeError(f'Incoming data must be str, datetime, or date')
+            if isinstance(value, str):
+                # Will validate that the incoming value as string can return a valid datetime obj
+                datetime.strptime(value, self.format)
+        return super().validate_data(value)
+
+    def set_data(self, value: t.Any) -> None:
+        to_data = self.validate_data(value)
+        if isinstance(to_data, str):
+            to_data = datetime.strptime(value, self.format)
+        to_data = to_data if (isinstance(to_data, datetime) or
+                              self._check_if_allow_null(value)) else (
+            datetime(to_data.year, to_data.month, to_data.day))
+        self.__data__ = to_data
+
+    def strftime(self, fmt: str = None):
+        fmt = self.format if not fmt else fmt
+        return self.data.strftime(fmt)
+
+
+class DateField(DatetimeField):
+    def __init__(self, required: bool = True, allow_null=False, date_format='%Y-%m-%d', **kwargs) -> None:
+        super().__init__(required=required, allow_null=allow_null, date_format=date_format, **kwargs)
 
     def validate_data(self, value: t.Union[str, datetime, date], fmt: str = None):
         fmt = self.format if not fmt else fmt
@@ -262,24 +285,10 @@ class DateField(Field):
             else datetime(to_data.year, to_data.month, to_data.day)
         self.__data__ = to_data
 
-
-class DatetimeField(DateField):
-    def __init__(self, required: bool = True, allow_null=False, **kwargs) -> None:
-        super().__init__(format=None, required=required, allow_null=allow_null, **kwargs)
-
-    def set_data(self, value: t.Any) -> None:
-        fmt = "%Y-%m-%d %H:%M:%S.%f"
-        to_data = self.validate_data(value, fmt)
-        if isinstance(to_data, str):
-            to_data = datetime.strptime(value, fmt)
-        to_data = to_data if (isinstance(to_data, datetime) or
-                              self._check_if_allow_null(value)) else (
-            datetime(to_data.year, to_data.month, to_data.day))
-        self.__data__ = to_data
-
-    def strftime(self, fmt: str = None):
-        fmt = self.format if not fmt else fmt
-        return self.data.strftime(fmt)
+    @property
+    def data(self) -> date:
+        data = super().data
+        return data.date()
 
 
 class EmbeddedDocumentField(Field):
@@ -390,7 +399,7 @@ class EnumField(Field):
             raise FieldError('Must provide at least one expected value type as a BSON type alias')
         self.expected_value_types = expected_value_types
 
-        self.choices = choices
+        self.choices = dict(choices)
         self.enum = [choice[0] for choice in choices]
         if allow_null:
             # If None is allowed, include it in the enum values
@@ -403,6 +412,10 @@ class EnumField(Field):
                 raise InvalidChoice("Not a valid choice")
         value = super().validate_data(value)
         return value.pk if hasattr(value, '_is_model') else value
+
+    @property
+    def verbose(self):
+        return self.choices[self.data]
 
 
 class ReferenceIdField(Field):

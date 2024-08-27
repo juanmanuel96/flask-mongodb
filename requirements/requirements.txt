@@ -1,5 +1,6 @@
-click<9
-flask<3
-pymongo<5
-wtforms<4
+click
+flask>1
+pymongo>=4
+wtforms
 email-validator
+werkzeug>1
